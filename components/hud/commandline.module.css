@@ -1,0 +1,98 @@
+.cli {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.log {
+  max-height: var(--log-max, 34dvh);
+  overflow-y: auto;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--panel-solid) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.log p {
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.in {
+  color: var(--muted);
+}
+
+.out {
+  color: var(--glow);
+}
+
+.sugg {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.suggBtn,
+.send {
+  min-height: 44px;
+  padding: 0 12px;
+  flex: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--glow);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.suggBtn:hover,
+.send:hover {
+  border-color: var(--glow);
+}
+
+.prompt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 12px;
+  background: color-mix(in srgb, var(--panel-solid) 90%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.prompt:focus-within {
+  border-color: var(--glow);
+  box-shadow: 0 0 16px -6px var(--glow);
+}
+
+.caret {
+  font-family: var(--font-mono);
+  color: var(--glow);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  background: transparent;
+  border: 0;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  outline: none;
+}
+
+.input:focus-visible {
+  outline: none;
+}
+
+.compact .log {
+  max-height: 20dvh;
+}

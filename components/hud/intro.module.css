@@ -1,0 +1,49 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #020806;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sub {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(14vh + env(safe-area-inset-bottom, 0px));
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: rgba(120, 255, 190, 0.75);
+  opacity: 0;
+  animation: subIn 600ms ease 2300ms forwards;
+}
+
+.skip {
+  position: absolute;
+  right: calc(14px + env(safe-area-inset-right, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: rgba(120, 255, 190, 0.35);
+}
+
+@keyframes subIn {
+  to {
+    opacity: 1;
+  }
+}
