@@ -1,10 +1,19 @@
+import AddForm from "@/components/hud/AddForm";
 import Panel from "@/components/hud/Panel";
 import styles from "@/components/hud/hud.module.css";
 import type { ModuleDef, PanelProps } from "@/modules/types";
 
 export type Data = { tasks: { id: string; title: string; done: boolean }[] };
 
-function ModulePanel({ result, demo }: PanelProps<Data>) {
+async function toggle(id: string, done: boolean, refresh?: () => void) {
+  try {
+    await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ done }) });
+  } finally {
+    refresh?.();
+  }
+}
+
+function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
   if (result.status !== "ok") {
     return <Panel title="Operations" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
@@ -15,12 +24,17 @@ function ModulePanel({ result, demo }: PanelProps<Data>) {
         <ul className={styles.list}>
           {data.tasks.map((t) => (
             <li key={t.id} className={styles.row}>
-              <span className={styles.check} data-done={t.done} aria-hidden="true" />
+              {demo ? (
+                <span className={styles.check} data-done={t.done} aria-hidden="true" />
+              ) : (
+                <button type="button" className={styles.check} data-done={t.done} role="checkbox" aria-checked={t.done} aria-label={t.title} onClick={() => void toggle(t.id, !t.done, refresh)} />
+              )}
               <span className={t.done ? styles.done : undefined}>{t.title}</span>
             </li>
           ))}
         </ul>
       )}
+      {demo || !refresh ? null : <AddForm endpoint="/api/tasks" field="title" placeholder="New task" label="New task" max={300} onDone={refresh} />}
     </Panel>
   );
 }

@@ -1,0 +1,43 @@
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-size: 16px;
+}
+
+.add {
+  min-height: 44px;
+  padding: 0 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--glow);
+  cursor: pointer;
+}
+
+.add:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: var(--bad);
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import NameIntro from "@/components/hud/NameIntro";
 import CaseFile from "@/components/hud/CaseFile";
 import CommandLine from "@/components/hud/CommandLine";
@@ -19,11 +19,11 @@ const STATUS_IDS = ["inbox", "monitor", "rss", "tasks"];
 type View = "wall" | "line";
 type Theme = "system" | "dark" | "light";
 
-function resultFor(mod: AnyModule, demo: boolean): ModuleResult<unknown> {
+function resultFor(mod: AnyModule, demo: boolean, live: Record<string, ModuleResult<unknown>>): ModuleResult<unknown> {
   if (demo || mod.manifest.always) {
     return { status: "ok", data: mod.demo(), fetchedAt: new Date().toISOString() };
   }
-  return { status: "not_connected", hint: mod.notConnectedHint };
+  return live[mod.manifest.id] ?? { status: "not_connected", hint: "Loading" };
 }
 
 function applyTheme(theme: Theme) {
@@ -42,6 +42,7 @@ export default function Hud() {
   const [coreState, setCoreState] = useState<CoreState>("idle");
   const [view, setView] = useState<View | null>(null);
   const [openFile, setOpenFile] = useState<string | null>(null);
+  const [live, setLive] = useState<Record<string, ModuleResult<unknown>>>({});
   const [intro, setIntro] = useState(true);
 
   useEffect(() => {
@@ -133,8 +134,31 @@ export default function Hud() {
     }
   }
 
+  const load = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/modules/${id}`, { cache: "no-store" });
+      if (res.status === 401) {
+        window.location.assign("/login");
+        return;
+      }
+      const result = (await res.json()) as ModuleResult<unknown>;
+      setLive((current) => ({ ...current, [id]: result }));
+    } catch {
+      setLive((current) => ({ ...current, [id]: { status: "error", message: "Could not reach the server" } }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (demo) return;
+    const timers = MODULES.filter((m) => !m.manifest.always).map((m) => {
+      void load(m.manifest.id);
+      return window.setInterval(() => void load(m.manifest.id), Math.max(30, m.manifest.refreshSeconds) * 1000);
+    });
+    return () => timers.forEach((t) => window.clearInterval(t));
+  }, [demo, load]);
+
   const byId = new Map(MODULES.map((m) => [m.manifest.id, m]));
-  const results = useMemo<Results>(() => new Map(MODULES.map((m) => [m.manifest.id, resultFor(m, demo)])), [demo]);
+  const results = useMemo<Results>(() => new Map(MODULES.map((m) => [m.manifest.id, resultFor(m, demo, live)])), [demo, live]);
   const fileMod = openFile ? byId.get(openFile) : undefined;
   const fileResult = openFile ? results.get(openFile) : undefined;
   const ask = (input: string) => answer(input, MODULES, results, demo);
@@ -230,7 +254,7 @@ export default function Hud() {
           const mod = byId.get(tile.id);
           if (!mod) return null;
           const Panel = mod.Panel;
-          const result = resultFor(mod, demo);
+          const result = results.get(tile.id) ?? resultFor(mod, demo, live);
           return (
             <div key={tile.id} className={`${styles.tile} ${sizeClass[tile.size]}`}>
               <div className={styles.tileInner}>
@@ -254,7 +278,7 @@ export default function Hud() {
                   FILE
                 </button>
                 <div className={styles.tilePanel}>
-                  <Panel result={result} demo={demo && !mod.manifest.always} />
+                  <Panel result={result} demo={demo && !mod.manifest.always} refresh={() => void load(tile.id)} />
                 </div>
               </div>
             </div>

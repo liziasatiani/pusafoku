@@ -250,12 +250,21 @@
 }
 
 .check {
+  position: relative;
+  padding: 0;
+  background: transparent;
   width: 12px;
   height: 12px;
   flex: none;
   border: 1px solid var(--glow);
   border-radius: 2px;
   align-self: center;
+}
+
+.check::after {
+  content: "";
+  position: absolute;
+  inset: -16px;
 }
 
 .check[data-done="true"] {

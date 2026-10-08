@@ -1,0 +1,93 @@
+import "server-only";
+import { DEFAULT_SETTINGS } from "@/lib/defaults";
+import { DbUnavailable, rest } from "@/lib/server/db";
+import type { ModuleResult } from "@/modules/types";
+
+type SettingsRow = { city: string; latitude: number; longitude: number; time_zone: string };
+type TaskRow = { id: string; title: string; done: boolean };
+type NoteRow = { id: string; body: string; created_at: string };
+
+const WEATHER_CODES: Record<number, string> = {
+  0: "Clear", 1: "Mostly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Fog",
+  51: "Light drizzle", 53: "Drizzle", 55: "Heavy drizzle", 61: "Light rain", 63: "Rain", 65: "Heavy rain",
+  71: "Light snow", 73: "Snow", 75: "Heavy snow", 80: "Showers", 81: "Showers", 82: "Heavy showers",
+  95: "Thunderstorm", 96: "Thunderstorm", 99: "Thunderstorm",
+};
+
+const TBILISI = { city: DEFAULT_SETTINGS.city, latitude: 41.7151, longitude: 44.8271, time_zone: DEFAULT_SETTINGS.timeZone };
+
+function ok<T>(data: T): ModuleResult<T> {
+  return { status: "ok", data, fetchedAt: new Date().toISOString() };
+}
+
+function notConnected(hint: string): ModuleResult<never> {
+  return { status: "not_connected", hint };
+}
+
+async function place(): Promise<SettingsRow> {
+  try {
+    const rows = await rest<SettingsRow[]>("settings?select=city,latitude,longitude,time_zone&limit=1");
+    return rows[0] ?? TBILISI;
+  } catch {
+    return TBILISI;
+  }
+}
+
+async function weather(): Promise<ModuleResult<unknown>> {
+  const p = await place();
+  const params = new URLSearchParams({
+    latitude: String(p.latitude),
+    longitude: String(p.longitude),
+    current: "temperature_2m,apparent_temperature,weather_code,wind_speed_10m",
+    daily: "temperature_2m_max,temperature_2m_min",
+    timezone: p.time_zone,
+    forecast_days: "1",
+  });
+  const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { next: { revalidate: 600 } });
+  if (!res.ok) return { status: "error", message: `Weather service answered ${res.status}` };
+  const json = (await res.json()) as {
+    current: { temperature_2m: number; apparent_temperature: number; weather_code: number; wind_speed_10m: number };
+    daily: { temperature_2m_max: number[]; temperature_2m_min: number[] };
+  };
+  return ok({
+    city: p.city,
+    tempC: json.current.temperature_2m,
+    feelsC: json.current.apparent_temperature,
+    condition: WEATHER_CODES[json.current.weather_code] ?? "Unknown",
+    highC: json.daily.temperature_2m_max[0],
+    lowC: json.daily.temperature_2m_min[0],
+    windKmh: json.current.wind_speed_10m,
+  });
+}
+
+async function tasks(): Promise<ModuleResult<unknown>> {
+  const rows = await rest<TaskRow[]>("tasks?select=id,title,done&order=done.asc,created_at.desc&limit=50");
+  return ok({ tasks: rows.map((r) => ({ id: r.id, title: r.title, done: r.done })) });
+}
+
+function stamp(iso: string, timeZone: string): string {
+  const date = new Date(iso);
+  const sameDay = new Intl.DateTimeFormat("en-CA", { timeZone }).format(date) === new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
+  return sameDay
+    ? new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hour12: false }).format(date)
+    : new Intl.DateTimeFormat("en-GB", { timeZone, weekday: "short", day: "numeric", month: "short" }).format(date);
+}
+
+async function notes(): Promise<ModuleResult<unknown>> {
+  const [rows, p] = await Promise.all([rest<NoteRow[]>("notes?select=id,body,created_at&order=created_at.desc&limit=30"), place()]);
+  return ok({ notes: rows.map((r) => ({ id: r.id, text: r.body, at: stamp(r.created_at, p.time_zone) })) });
+}
+
+const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes };
+const NEEDS_DB = new Set(["tasks", "notes"]);
+
+export async function loadModule(id: string): Promise<ModuleResult<unknown>> {
+  const fetcher = FETCHERS[id];
+  if (!fetcher) return notConnected("This panel is not wired up yet.");
+  try {
+    return await fetcher();
+  } catch (error) {
+    if (error instanceof DbUnavailable && NEEDS_DB.has(id)) return notConnected("Database is not connected yet.");
+    return { status: "error", message: error instanceof Error ? error.message : "Something went wrong" };
+  }
+}

@@ -1,10 +1,11 @@
+import AddForm from "@/components/hud/AddForm";
 import Panel from "@/components/hud/Panel";
 import styles from "@/components/hud/hud.module.css";
 import type { ModuleDef, PanelProps } from "@/modules/types";
 
 export type Data = { notes: { id: string; text: string; at: string }[] };
 
-function ModulePanel({ result, demo }: PanelProps<Data>) {
+function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
   if (result.status !== "ok") {
     return <Panel title="Archive" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
@@ -21,6 +22,7 @@ function ModulePanel({ result, demo }: PanelProps<Data>) {
           ))}
         </ul>
       )}
+      {demo || !refresh ? null : <AddForm endpoint="/api/notes" field="text" placeholder="New note" label="New note" max={4000} onDone={refresh} />}
     </Panel>
   );
 }

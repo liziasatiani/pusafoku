@@ -20,6 +20,7 @@ export type ModuleManifest = {
 export type PanelProps<T> = {
   result: ModuleResult<T>;
   demo?: boolean;
+  refresh?: () => void;
 };
 
 export type ModuleDef<T> = {

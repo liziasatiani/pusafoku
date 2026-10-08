@@ -6,3 +6,10 @@ export function sessionSecret(): string | undefined {
 export function passwordHash(): string | undefined {
   return process.env.PUSAFOKU_PASSWORD_HASH || undefined;
 }
+
+export function supabaseConfig(): { url: string; key: string } | undefined {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key || !url.startsWith("https://")) return undefined;
+  return { url: url.replace(/\/$/, ""), key };
+}
