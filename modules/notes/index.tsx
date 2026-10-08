@@ -5,6 +5,14 @@ import type { ModuleDef, PanelProps } from "@/modules/types";
 
 export type Data = { notes: { id: string; text: string; at: string }[] };
 
+async function remove(id: string, refresh?: () => void) {
+  try {
+    await fetch(`/api/notes/${id}`, { method: "DELETE" });
+  } finally {
+    refresh?.();
+  }
+}
+
 function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
   if (result.status !== "ok") {
     return <Panel title="Archive" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
@@ -18,6 +26,11 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
             <li key={n.id} className={styles.row}>
               <span className={styles.time + " mono"}>{n.at}</span>
               <span>{n.text}</span>
+              {demo ? null : (
+                <button type="button" className={styles.remove} aria-label="Delete note" onClick={() => void remove(n.id, refresh)}>
+                  ✕
+                </button>
+              )}
             </li>
           ))}
         </ul>

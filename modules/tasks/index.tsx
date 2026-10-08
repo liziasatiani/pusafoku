@@ -5,6 +5,14 @@ import type { ModuleDef, PanelProps } from "@/modules/types";
 
 export type Data = { tasks: { id: string; title: string; done: boolean }[] };
 
+async function remove(id: string, refresh?: () => void) {
+  try {
+    await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+  } finally {
+    refresh?.();
+  }
+}
+
 async function toggle(id: string, done: boolean, refresh?: () => void) {
   try {
     await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ done }) });
@@ -30,6 +38,11 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
                 <button type="button" className={styles.check} data-done={t.done} role="checkbox" aria-checked={t.done} aria-label={t.title} onClick={() => void toggle(t.id, !t.done, refresh)} />
               )}
               <span className={t.done ? styles.done : undefined}>{t.title}</span>
+              {demo ? null : (
+                <button type="button" className={styles.remove} aria-label={`Delete ${t.title}`} onClick={() => void remove(t.id, refresh)}>
+                  ✕
+                </button>
+              )}
             </li>
           ))}
         </ul>

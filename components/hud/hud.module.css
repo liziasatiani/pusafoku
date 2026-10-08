@@ -598,3 +598,25 @@
 .grid[hidden] {
   display: none;
 }
+
+.remove {
+  position: relative;
+  margin-left: auto;
+  padding: 0 4px;
+  background: transparent;
+  border: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.remove::after {
+  content: "";
+  position: absolute;
+  inset: -14px -8px;
+}
+
+.remove:hover {
+  color: var(--bad);
+}

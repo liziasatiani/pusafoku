@@ -13,3 +13,8 @@ export function supabaseConfig(): { url: string; key: string } | undefined {
   if (!url || !key || !url.startsWith("https://")) return undefined;
   return { url: url.replace(/\/$/, ""), key };
 }
+
+export function cronSecret(): string | undefined {
+  const value = process.env.CRON_SECRET;
+  return value && value.length >= 24 ? value : undefined;
+}

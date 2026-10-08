@@ -21,3 +21,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     return Response.json({ error: error instanceof DbUnavailable ? "Database is not connected" : "Could not save" }, { status: 503 });
   }
 }
+
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  const denied = await apiGuard(request);
+  if (denied) return denied;
+  const { id } = await context.params;
+  if (!UUID.test(id)) return Response.json({ error: "not found" }, { status: 404 });
+  try {
+    await rest(`tasks?id=eq.${id}`, { method: "DELETE", prefer: "return=minimal" });
+    return Response.json({ ok: true });
+  } catch (error) {
+    return Response.json({ error: error instanceof DbUnavailable ? "Database is not connected" : "Could not delete" }, { status: 503 });
+  }
+}

@@ -78,8 +78,20 @@ async function notes(): Promise<ModuleResult<unknown>> {
   return ok({ notes: rows.map((r) => ({ id: r.id, text: r.body, at: stamp(r.created_at, p.time_zone) })) });
 }
 
-const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes };
-const NEEDS_DB = new Set(["tasks", "notes"]);
+type SiteRow = { id: string; url: string; monitor_checks: { ok: boolean; ms: number | null; checked_at: string }[] };
+
+async function monitor(): Promise<ModuleResult<unknown>> {
+  const rows = await rest<SiteRow[]>("monitor_sites?select=id,url,monitor_checks(ok,ms,checked_at)&active=eq.true&order=created_at.asc&monitor_checks.order=checked_at.desc&monitor_checks.limit=1");
+  return ok({
+    sites: rows.map((r) => {
+      const last = r.monitor_checks[0];
+      return { id: r.id, url: r.url.replace(/^https:\/\//, "").replace(/\/$/, ""), ok: last ? last.ok : null, ms: last?.ms ?? 0, checkedAt: last?.checked_at ?? null };
+    }),
+  });
+}
+
+const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor };
+const NEEDS_DB = new Set(["tasks", "notes", "monitor"]);
 
 export async function loadModule(id: string): Promise<ModuleResult<unknown>> {
   const fetcher = FETCHERS[id];
