@@ -1,6 +1,7 @@
 import "server-only";
 import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { DbUnavailable, rest } from "@/lib/server/db";
+import { ago, readFeed, type Headline } from "@/lib/server/feeds";
 import type { ModuleResult } from "@/modules/types";
 
 type SettingsRow = { city: string; latitude: number; longitude: number; time_zone: string };
@@ -90,8 +91,33 @@ async function monitor(): Promise<ModuleResult<unknown>> {
   });
 }
 
-const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor };
-const NEEDS_DB = new Set(["tasks", "notes", "monitor"]);
+type FeedRow = { id: string; url: string; label: string };
+
+const FEED_TTL_MS = 5 * 60 * 1000;
+const feedCache = new Map<string, { at: number; items: Headline[] | null }>();
+
+async function cachedFeed(url: string): Promise<Headline[] | null> {
+  const hit = feedCache.get(url);
+  if (hit && Date.now() - hit.at < FEED_TTL_MS) return hit.items;
+  const items = await readFeed(url);
+  feedCache.set(url, { at: Date.now(), items });
+  return items;
+}
+
+async function rss(): Promise<ModuleResult<unknown>> {
+  const feeds = await rest<FeedRow[]>("feeds?select=id,url,label&active=eq.true&order=created_at.asc&limit=10");
+  const results = await Promise.all(feeds.map((f) => cachedFeed(f.url)));
+  const now = Date.now();
+  const items = results
+    .flatMap((r) => (r ? r.slice(0, 5) : []))
+    .sort((a, b) => (b.at ?? 0) - (a.at ?? 0))
+    .slice(0, 12)
+    .map((h) => ({ title: h.title, source: h.source, ago: ago(h.at, now), url: h.url }));
+  return ok({ items, feeds: feeds.map((f) => ({ id: f.id, label: f.label })), failed: results.filter((r) => r === null).length });
+}
+
+const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss };
+const NEEDS_DB = new Set(["tasks", "notes", "monitor", "rss"]);
 
 export async function loadModule(id: string): Promise<ModuleResult<unknown>> {
   const fetcher = FETCHERS[id];

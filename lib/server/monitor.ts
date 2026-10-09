@@ -34,7 +34,7 @@ function privateAddress(ip: string): boolean {
   return a === 0 || a === 10 || a === 127 || a >= 224 || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
 }
 
-async function reachesPublicHost(host: string): Promise<boolean> {
+export async function reachesPublicHost(host: string): Promise<boolean> {
   try {
     const addresses = await lookup(host, { all: true });
     return addresses.length > 0 && addresses.every((a) => !privateAddress(a.address));
