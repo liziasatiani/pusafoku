@@ -116,8 +116,15 @@ async function rss(): Promise<ModuleResult<unknown>> {
   return ok({ items, feeds: feeds.map((f) => ({ id: f.id, label: f.label })), failed: results.filter((r) => r === null).length });
 }
 
-const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss };
-const NEEDS_DB = new Set(["tasks", "notes", "monitor", "rss"]);
+type ApprovalRow = { id: string; title: string; source: string; draft: string };
+
+async function inbox(): Promise<ModuleResult<unknown>> {
+  const rows = await rest<ApprovalRow[]>("approvals?select=id,title,source,draft&status=eq.pending&order=created_at.asc&limit=20");
+  return ok({ items: rows });
+}
+
+const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss, inbox };
+const NEEDS_DB = new Set(["tasks", "notes", "monitor", "rss", "inbox"]);
 
 export async function loadModule(id: string): Promise<ModuleResult<unknown>> {
   const fetcher = FETCHERS[id];

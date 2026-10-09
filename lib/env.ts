@@ -18,3 +18,8 @@ export function cronSecret(): string | undefined {
   const value = process.env.CRON_SECRET;
   return value && value.length >= 24 ? value : undefined;
 }
+
+export function inboxToken(): string | undefined {
+  const value = process.env.INBOX_TOKEN;
+  return value && value.length >= 24 ? value : undefined;
+}

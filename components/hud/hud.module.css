@@ -653,3 +653,18 @@
 .chips .remove {
   margin-left: 0;
 }
+
+.draftBox {
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
