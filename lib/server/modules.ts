@@ -3,7 +3,7 @@ import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { DbUnavailable, rest } from "@/lib/server/db";
 import { calendarUrl } from "@/lib/env";
 import { ago, readFeed, type Headline } from "@/lib/server/feeds";
-import { eventsForDay } from "@/lib/server/ics";
+import { eventsForDay, ownEventsToIcs } from "@/lib/server/ics";
 import { fetchPublicText } from "@/lib/server/safe-fetch";
 import type { ModuleResult } from "@/modules/types";
 
@@ -128,19 +128,46 @@ async function inbox(): Promise<ModuleResult<unknown>> {
 
 const CALENDAR_TTL_MS = 5 * 60 * 1000;
 const CALENDAR_MAX_BYTES = 5_000_000;
-let calendarCache: { at: number; text: string } | null = null;
+const calendarCache = new Map<string, { at: number; text: string | null }>();
+
+type EventRow = { id: string; title: string; day: string; start_time: string | null; end_time: string | null; repeat: string };
+type SourceRow = { id: string; label: string; url: string };
+
+async function sourceText(url: string): Promise<string | null> {
+  const hit = calendarCache.get(url);
+  if (hit && Date.now() - hit.at < CALENDAR_TTL_MS) return hit.text;
+  const text = await fetchPublicText(url, CALENDAR_MAX_BYTES);
+  calendarCache.set(url, { at: Date.now(), text });
+  return text;
+}
 
 async function calendar(): Promise<ModuleResult<unknown>> {
-  const url = calendarUrl();
-  if (!url) return notConnected("Add the private calendar address as CALENDAR_ICS_URL to show today's events.");
-  if (!calendarCache || Date.now() - calendarCache.at > CALENDAR_TTL_MS) {
-    const text = await fetchPublicText(url, CALENDAR_MAX_BYTES);
-    if (text === null) return { status: "error", message: "The calendar could not be read" };
-    calendarCache = { at: Date.now(), text };
+  let rows: EventRow[] = [];
+  let sources: SourceRow[] = [];
+  let dbReady = true;
+  try {
+    [rows, sources] = await Promise.all([
+      rest<EventRow[]>("events?select=id,title,day,start_time,end_time,repeat&order=day.asc&limit=500"),
+      rest<SourceRow[]>("calendar_sources?select=id,label,url&active=eq.true&order=created_at.asc&limit=5"),
+    ]);
+  } catch (error) {
+    if (!(error instanceof DbUnavailable)) throw error;
+    dbReady = false;
   }
+  const extra = calendarUrl();
+  const urls = [...sources.map((s) => s.url), ...(extra ? [extra] : [])];
+  if (!dbReady && urls.length === 0) return notConnected("Connect the database to keep your own calendar, or connect a calendar address.");
   const p = await place();
-  const events = eventsForDay(calendarCache.text, Date.now(), p.time_zone).map((e) => ({ time: e.time, title: e.title }));
-  return ok({ events });
+  const texts = await Promise.all(urls.map(sourceText));
+  const combined = [ownEventsToIcs(rows, p.time_zone), ...texts.filter((t): t is string => t !== null)].join("\r\n");
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: p.time_zone }).format(new Date());
+  return ok({
+    events: eventsForDay(combined, Date.now(), p.time_zone).map((e) => ({ time: e.time, title: e.title })),
+    mine: rows.filter((r) => r.repeat !== "none" || r.day >= today).slice(0, 30).map((r) => ({ id: r.id, title: r.title, day: r.day, start: r.start_time?.slice(0, 5) ?? null, repeat: r.repeat })),
+    sources: sources.map((s) => ({ id: s.id, label: s.label })),
+    failed: texts.filter((t) => t === null).length,
+    editable: dbReady,
+  });
 }
 
 const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss, inbox, calendar };

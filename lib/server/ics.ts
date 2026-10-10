@@ -179,3 +179,28 @@ export function eventsForDay(text: string, now: number, tz: string): DayEvent[] 
   }
   return out.sort((a, b) => a.sort - b.sort).slice(0, 20);
 }
+
+export type OwnEvent = { title: string; day: string; start_time: string | null; end_time: string | null; repeat: string };
+
+function icsText(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/[\r\n]+/g, " ");
+}
+
+export function ownEventsToIcs(rows: OwnEvent[], tz: string): string {
+  const blocks = rows.map((r) => {
+    const date = r.day.replace(/-/g, "");
+    const lines = ["BEGIN:VEVENT", `SUMMARY:${icsText(r.title)}`];
+    if (r.start_time) {
+      const stamp = (t: string) => `${date}T${t.slice(0, 2)}${t.slice(3, 5)}00`;
+      lines.push(`DTSTART;TZID=${tz}:${stamp(r.start_time)}`);
+      if (r.end_time) lines.push(`DTEND;TZID=${tz}:${stamp(r.end_time)}`);
+    } else {
+      const next = new Date(Date.parse(`${r.day}T00:00:00Z`) + 86400000).toISOString().slice(0, 10).replace(/-/g, "");
+      lines.push(`DTSTART;VALUE=DATE:${date}`, `DTEND;VALUE=DATE:${next}`);
+    }
+    if (r.repeat !== "none") lines.push(`RRULE:FREQ=${r.repeat.toUpperCase()}`);
+    lines.push("END:VEVENT");
+    return lines.join("\r\n");
+  });
+  return `BEGIN:VCALENDAR\r\n${blocks.join("\r\n")}\r\nEND:VCALENDAR`;
+}
