@@ -13,8 +13,8 @@ function ModulePanel({ result, demo }: PanelProps<Data>) {
     <Panel title="Schedule" demo={demo}>
       {data.events.length === 0 ? <p className={styles.sub}>No events today.</p> : (
         <ul className={styles.list}>
-          {data.events.map((e) => (
-            <li key={e.time + e.title} className={styles.row}>
+          {data.events.map((e, i) => (
+            <li key={`${e.time}-${e.title}-${i}`} className={styles.row}>
               <span className={styles.time + " mono"}>{e.time}</span>
               <span>{e.title}</span>
             </li>
@@ -26,15 +26,14 @@ function ModulePanel({ result, demo }: PanelProps<Data>) {
 }
 
 function toLines(data: Data): string[] {
-  const out = data.events.length === 0 ? "Nothing scheduled today." : data.events.map((e) => e.time + " " + e.title);
-  return Array.isArray(out) ? out : [out];
+  return data.events.length === 0 ? ["Nothing scheduled today."] : data.events.map((e) => e.time + " " + e.title);
 }
 
 const def: ModuleDef<Data> = {
   manifest: {
     id: "calendar",
     name: "Schedule",
-    description: "Today's events from a private ICS link or Google Calendar.",
+    description: "Today's events from your private calendar address.",
     env: ["CALENDAR_ICS_URL"],
     refreshSeconds: 600,
     size: "M",
@@ -42,7 +41,7 @@ const def: ModuleDef<Data> = {
   Panel: ModulePanel,
   lines: toLines,
   demo: () => ({ events: [{ time: "10:00", title: "Supplier call" }, { time: "13:30", title: "Lunch" }, { time: "17:00", title: "Review week" }] }),
-  notConnectedHint: "Add CALENDAR_ICS_URL to the server environment to show today's events.",
+  notConnectedHint: "Add your private calendar address to show today's events.",
 };
 
 export default def;

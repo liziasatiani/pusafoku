@@ -1,7 +1,10 @@
 import "server-only";
 import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { DbUnavailable, rest } from "@/lib/server/db";
+import { calendarUrl } from "@/lib/env";
 import { ago, readFeed, type Headline } from "@/lib/server/feeds";
+import { eventsForDay } from "@/lib/server/ics";
+import { fetchPublicText } from "@/lib/server/safe-fetch";
 import type { ModuleResult } from "@/modules/types";
 
 type SettingsRow = { city: string; latitude: number; longitude: number; time_zone: string };
@@ -123,7 +126,24 @@ async function inbox(): Promise<ModuleResult<unknown>> {
   return ok({ items: rows });
 }
 
-const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss, inbox };
+const CALENDAR_TTL_MS = 5 * 60 * 1000;
+const CALENDAR_MAX_BYTES = 5_000_000;
+let calendarCache: { at: number; text: string } | null = null;
+
+async function calendar(): Promise<ModuleResult<unknown>> {
+  const url = calendarUrl();
+  if (!url) return notConnected("Add the private calendar address as CALENDAR_ICS_URL to show today's events.");
+  if (!calendarCache || Date.now() - calendarCache.at > CALENDAR_TTL_MS) {
+    const text = await fetchPublicText(url, CALENDAR_MAX_BYTES);
+    if (text === null) return { status: "error", message: "The calendar could not be read" };
+    calendarCache = { at: Date.now(), text };
+  }
+  const p = await place();
+  const events = eventsForDay(calendarCache.text, Date.now(), p.time_zone).map((e) => ({ time: e.time, title: e.title }));
+  return ok({ events });
+}
+
+const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss, inbox, calendar };
 const NEEDS_DB = new Set(["tasks", "notes", "monitor", "rss", "inbox"]);
 
 export async function loadModule(id: string): Promise<ModuleResult<unknown>> {

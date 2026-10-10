@@ -5,7 +5,7 @@ const MAX_BYTES = 1_000_000;
 const MAX_HOPS = 3;
 const TIMEOUT_MS = 8000;
 
-export async function fetchPublicText(start: string): Promise<string | null> {
+export async function fetchPublicText(start: string, maxBytes: number = MAX_BYTES): Promise<string | null> {
   let url = normalizeUrl(start);
   for (let hop = 0; url && hop <= MAX_HOPS; hop++) {
     if (!(await reachesPublicHost(new URL(url).hostname))) return null;
@@ -14,7 +14,7 @@ export async function fetchPublicText(start: string): Promise<string | null> {
       res = await fetch(url, {
         redirect: "manual",
         signal: AbortSignal.timeout(TIMEOUT_MS),
-        headers: { "user-agent": "pusafoku-reader", accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9" },
+        headers: { "user-agent": "pusafoku-reader", accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, text/calendar;q=0.9" },
         cache: "no-store",
       });
     } catch {
@@ -34,7 +34,7 @@ export async function fetchPublicText(start: string): Promise<string | null> {
       const { done, value } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > MAX_BYTES) {
+      if (size > maxBytes) {
         await reader.cancel();
         return null;
       }
