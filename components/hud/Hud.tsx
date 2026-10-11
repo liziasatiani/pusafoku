@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import NameIntro from "@/components/hud/NameIntro";
 import CaseFile from "@/components/hud/CaseFile";
-import CommandLine from "@/components/hud/CommandLine";
+import CommandLine, { type Mode } from "@/components/hud/CommandLine";
 import DigitGlobe, { type CoreState } from "@/components/hud/DigitGlobe";
 import { answer, type Results } from "@/lib/commands";
 import { useLayout, type TileLayout } from "@/components/hud/useLayout";
@@ -162,6 +162,7 @@ export default function Hud() {
   const fileMod = openFile ? byId.get(openFile) : undefined;
   const fileResult = openFile ? results.get(openFile) : undefined;
   const ask = (input: string) => answer(input, MODULES, results, demo);
+  const onMode = (mode: Mode) => setCoreState(mode === "listening" ? "listening" : mode === "speaking" ? "speaking" : "idle");
   const visible = layout.filter((t) => !t.hidden);
   const hidden = layout.filter((t) => t.hidden);
   const sizeClass = { S: styles.sizeS, M: styles.sizeM, L: styles.sizeL } as const;
@@ -225,7 +226,7 @@ export default function Hud() {
             })}
           </ul>
           <div className={styles.lineCli}>
-            <CommandLine ask={ask} onBusy={(busy) => setCoreState(busy ? "speaking" : "idle")} />
+            <CommandLine ask={ask} onMode={onMode} />
           </div>
         </main>
       ) : null}
@@ -237,7 +238,7 @@ export default function Hud() {
             <DigitGlobe state={coreState} marker={demo} />
           </div>
           <div className={styles.coreBar}>
-            <CommandLine ask={ask} onBusy={(busy) => setCoreState(busy ? "speaking" : "idle")} compact />
+            <CommandLine ask={ask} onMode={onMode} compact />
             {demo ? (
               <div className={styles.stateRow}>
                 {STATES.map((st) => (

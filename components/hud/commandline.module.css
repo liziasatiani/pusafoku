@@ -96,3 +96,64 @@
 .compact .log {
   max-height: 20dvh;
 }
+
+.voiceRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mic,
+.tog {
+  min-height: 44px;
+  padding: 0 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mic:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.mic {
+  min-width: 96px;
+  color: var(--glow);
+}
+
+.tog[aria-pressed="true"] {
+  border-color: var(--glow);
+  color: var(--glow);
+}
+
+.micOn {
+  border-color: var(--glow);
+  background: var(--glow);
+  color: var(--bg);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--bad);
+}
+
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--glow) 25%, transparent);
+  }
+}
+
+.info {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
