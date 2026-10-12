@@ -5,6 +5,8 @@ import NameIntro from "@/components/hud/NameIntro";
 import CaseFile from "@/components/hud/CaseFile";
 import CommandLine, { type Mode } from "@/components/hud/CommandLine";
 import DigitGlobe, { type CoreState } from "@/components/hud/DigitGlobe";
+import SettingsDialog, { type LiveSettings } from "@/components/hud/SettingsDialog";
+import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { answer, type Results } from "@/lib/commands";
 import { useLayout, type TileLayout } from "@/components/hud/useLayout";
 import { MODULES } from "@/modules/registry";
@@ -19,7 +21,12 @@ const STATUS_IDS = ["inbox", "monitor", "rss", "tasks"];
 type View = "wall" | "line";
 type Theme = "system" | "dark" | "light";
 
-function resultFor(mod: AnyModule, demo: boolean, live: Record<string, ModuleResult<unknown>>): ModuleResult<unknown> {
+const FALLBACK_SETTINGS: LiveSettings = { ...DEFAULT_SETTINGS, latitude: 41.7151, longitude: 44.8271, editable: false };
+
+function resultFor(mod: AnyModule, demo: boolean, live: Record<string, ModuleResult<unknown>>, settings: LiveSettings): ModuleResult<unknown> {
+  if (mod.manifest.id === "clock") {
+    return { status: "ok", data: { timeZone: settings.timeZone, name: settings.name }, fetchedAt: new Date().toISOString() };
+  }
   if (demo || mod.manifest.always) {
     return { status: "ok", data: mod.demo(), fetchedAt: new Date().toISOString() };
   }
@@ -43,6 +50,8 @@ export default function Hud() {
   const [view, setView] = useState<View | null>(null);
   const [openFile, setOpenFile] = useState<string | null>(null);
   const [live, setLive] = useState<Record<string, ModuleResult<unknown>>>({});
+  const [settings, setSettings] = useState<LiveSettings>(FALLBACK_SETTINGS);
+  const [showSettings, setShowSettings] = useState(false);
   const [intro, setIntro] = useState(true);
 
   useEffect(() => {
@@ -148,6 +157,19 @@ export default function Hud() {
     }
   }, []);
 
+  const loadSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/settings", { cache: "no-store" });
+      if (res.ok) setSettings((await res.json()) as LiveSettings);
+    } catch {
+      return;
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadSettings();
+  }, [loadSettings]);
+
   useEffect(() => {
     if (demo) return;
     const timers = MODULES.filter((m) => !m.manifest.always).map((m) => {
@@ -158,7 +180,7 @@ export default function Hud() {
   }, [demo, load]);
 
   const byId = new Map(MODULES.map((m) => [m.manifest.id, m]));
-  const results = useMemo<Results>(() => new Map(MODULES.map((m) => [m.manifest.id, resultFor(m, demo, live)])), [demo, live]);
+  const results = useMemo<Results>(() => new Map(MODULES.map((m) => [m.manifest.id, resultFor(m, demo, live, settings)])), [demo, live, settings]);
   const fileMod = openFile ? byId.get(openFile) : undefined;
   const fileResult = openFile ? results.get(openFile) : undefined;
   const ask = (input: string) => answer(input, MODULES, results, demo);
@@ -187,6 +209,9 @@ export default function Hud() {
           </button>
           <button type="button" className={styles.chip} onClick={() => setIntro(true)} title="Replay the opening">
             INTRO
+          </button>
+          <button type="button" className={styles.chip} onClick={() => setShowSettings(true)}>
+            SETTINGS
           </button>
           <button type="button" className={styles.chip} onClick={cycleTheme} title="Theme">
             {theme.toUpperCase()}
@@ -226,7 +251,7 @@ export default function Hud() {
             })}
           </ul>
           <div className={styles.lineCli}>
-            <CommandLine ask={ask} onMode={onMode} />
+            <CommandLine ask={ask} onMode={onMode} defaultLang={settings.language} />
           </div>
         </main>
       ) : null}
@@ -238,7 +263,7 @@ export default function Hud() {
             <DigitGlobe state={coreState} marker={demo} />
           </div>
           <div className={styles.coreBar}>
-            <CommandLine ask={ask} onMode={onMode} compact />
+            <CommandLine ask={ask} onMode={onMode} defaultLang={settings.language} compact />
             {demo ? (
               <div className={styles.stateRow}>
                 {STATES.map((st) => (
@@ -255,7 +280,7 @@ export default function Hud() {
           const mod = byId.get(tile.id);
           if (!mod) return null;
           const Panel = mod.Panel;
-          const result = results.get(tile.id) ?? resultFor(mod, demo, live);
+          const result = results.get(tile.id) ?? resultFor(mod, demo, live, settings);
           return (
             <div key={tile.id} className={`${styles.tile} ${sizeClass[tile.size]}`}>
               <div className={styles.tileInner}>
@@ -286,6 +311,19 @@ export default function Hud() {
           );
         })}
       </main>
+
+      {showSettings ? (
+        <SettingsDialog
+          current={settings}
+          onClose={() => setShowSettings(false)}
+          onSaved={() => {
+            void loadSettings();
+            void load("weather");
+            void load("calendar");
+            void load("notes");
+          }}
+        />
+      ) : null}
 
       {fileMod && fileResult ? <CaseFile mod={fileMod} result={fileResult} demo={demo} onClose={() => setOpenFile(null)} /> : null}
 

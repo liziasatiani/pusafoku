@@ -11,13 +11,14 @@ type Props = {
   ask: (input: string) => string[];
   onMode?: (mode: Mode) => void;
   compact?: boolean;
+  defaultLang?: VoiceLang;
 };
 
 const PREFS_KEY = "pusafoku.voice";
 
 type Entry = { id: number; kind: "in" | "out"; text: string };
 
-export default function CommandLine({ ask, onMode, compact }: Props) {
+export default function CommandLine({ ask, onMode, compact, defaultLang = "en" }: Props) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [value, setValue] = useState("");
   const run = useRef(0);
@@ -44,11 +45,11 @@ export default function CommandLine({ ask, onMode, compact }: Props) {
     try {
       const saved = JSON.parse(window.localStorage.getItem(PREFS_KEY) ?? "{}") as { speak?: boolean; lang?: string };
       if (saved.speak === true) setSpeak(true);
-      if (saved.lang === "ka") setLang("ka");
+      setLang(saved.lang === "ka" || saved.lang === "en" ? saved.lang : defaultLang);
     } catch {
-      return;
+      setLang(defaultLang);
     }
-  }, []);
+  }, [defaultLang]);
 
   function savePrefs(next: { speak: boolean; lang: VoiceLang }) {
     try {

@@ -76,6 +76,7 @@ describe("logged-out visitors", () => {
     ["POST", "/api/calendar/sources"], ["DELETE", `/api/calendar/sources/${ID}`],
     ["POST", "/api/monitor/sites"], ["DELETE", `/api/monitor/sites/${ID}`], ["POST", "/api/monitor/check"],
     ["PATCH", `/api/approvals/${ID}`], ["POST", "/api/auth/logout"],
+    ["GET", "/api/settings"], ["PATCH", "/api/settings"], ["GET", "/api/settings/search?q=tbilisi"],
   ];
   for (const [method, path] of PROTECTED) {
     test(`${method} ${path} is blocked`, async () => {
@@ -124,7 +125,7 @@ describe("logged-in visitors", () => {
       ["POST", "/api/tasks", { title: "x" }], ["POST", "/api/notes", { text: "x" }], ["POST", "/api/feeds", { url: "https://example.com/feed" }],
       ["POST", "/api/events", { title: "x", day: "2026-10-13" }], ["POST", "/api/calendar/sources", { url: "https://example.com/a.ics" }],
       ["POST", "/api/monitor/sites", { url: "https://example.com" }], ["POST", "/api/monitor/check", {}], ["PATCH", `/api/approvals/${ID}`, { action: "approve" }],
-      ["DELETE", `/api/tasks/${ID}`, undefined],
+      ["DELETE", `/api/tasks/${ID}`, undefined], ["PATCH", "/api/settings", { name: "x" }],
     ];
     for (const [method, path, body] of forms) {
       assert.equal((await call(method, path, { authed: true, body })).status, 403, `${method} ${path} without Origin`);
@@ -137,6 +138,8 @@ describe("logged-in visitors", () => {
     assert.equal((await call("PATCH", "/api/approvals/not-a-uuid", { authed: true, headers: same, body: { action: "approve" } })).status, 404);
     assert.equal((await call("PATCH", `/api/approvals/${ID}`, { authed: true, headers: same, body: { action: "delete" } })).status, 400);
     assert.equal((await call("POST", "/api/events", { authed: true, headers: same, body: { title: "x", day: "2026-02-30" } })).status, 400);
+    assert.equal((await call("PATCH", "/api/settings", { authed: true, headers: same, body: { name: "x", language: "fr" } })).status, 400);
+    assert.equal((await call("GET", "/api/settings/search?q=a", { authed: true })).status, 400);
     for (const url of ["http://example.com", "https://localhost", "https://127.0.0.1", "https://169.254.169.254/x", "https://10.0.0.1/a", "https://intranet/a", "https://u:p@example.com/a", "https://example.com:8443/a"]) {
       assert.equal((await call("POST", "/api/feeds", { authed: true, headers: same, body: { url } })).status, 400, url);
       assert.equal((await call("POST", "/api/monitor/sites", { authed: true, headers: same, body: { url } })).status, 400, url);
@@ -150,7 +153,7 @@ describe("secrets stay on the server", () => {
   const leaks = (text) => values.filter((v) => text.includes(v));
 
   test("nothing in the pages or panel data contains a secret", async () => {
-    const paths = ["/login", "/", "/api/modules/weather", "/api/modules/tasks", "/api/modules/notes", "/api/modules/monitor", "/api/modules/rss", "/api/modules/inbox", "/api/modules/calendar"];
+    const paths = ["/login", "/", "/api/settings", "/api/modules/weather", "/api/modules/tasks", "/api/modules/notes", "/api/modules/monitor", "/api/modules/rss", "/api/modules/inbox", "/api/modules/calendar"];
     for (const path of paths) {
       const res = await call("GET", path, { authed: true });
       assert.deepEqual(leaks(await res.text()), [], path);

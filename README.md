@@ -5,7 +5,7 @@ A private command centre for one person. It shows your tasks, notes, websites, n
 ## Five-line how-to
 
 1. Open the site and log in with your password.
-2. Fill the panels: tasks in Operations, notes in Archive, websites in Network, news feeds in Signals, events or calendar addresses in Schedule.
+2. Press SETTINGS to set your name and city, then fill the panels: tasks in Operations, notes in Archive, websites in Network, news feeds in Signals, events or calendar addresses in Schedule.
 3. Type or tap MIC and say a command: `start my day`, `network`, `sky`, `authorizations`.
 4. Items other tools send to the inbox wait in Authorizations until you Approve, Edit or Reject them.
 5. DEMO shows sample data. Turn it off for your real data.
@@ -33,7 +33,7 @@ A random value: `node -e "console.log(require('crypto').randomBytes(24).toString
 1. Create a database project and run `supabase/schema.sql` in its SQL editor. It creates every table with row level security on and no public access.
 2. Create the Vercel project from this repository and add the variables above.
 3. For the 30 minute website check, add two repository secrets in GitHub under Settings, Secrets and variables, Actions: `CRON_SECRET` (same value as in Vercel) and `SITE_URL` (your site address with no slash at the end). The workflow in `.github/workflows/monitor.yml` does the rest.
-4. Your name, city, time zone and currency live in the single row of the `settings` table.
+4. Your name, language, city, time zone and currency are set with the SETTINGS button on the page. They are stored in the single row of the `settings` table.
 
 ## Commands
 

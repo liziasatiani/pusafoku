@@ -2,11 +2,14 @@
 
 Each panel is one module in `modules/`. A panel shows "not connected" until its data source is set up, and DEMO fills it with sample data. Every panel has a FILE button that opens its case file: what it is, when it last updated, how often it refreshes and which settings it needs.
 
+## Settings
+The SETTINGS button opens a form for your name, language (English or Georgian), currency and city. Type a city, press FIND and pick the match: its coordinates and time zone are filled in for you, using Open-Meteo's place search. Saving updates the Clock greeting, the Sky weather, the time zone of Schedule and Archive times, and the default voice language. Needs the database to save; without it the defaults are shown.
+
 ## Clock
-Time, date and a greeting in your time zone. Needs nothing. Updates every second in the browser.
+Time, date and a greeting in your time zone, with your name from Settings. Updates every second in the browser.
 
 ## Sky
-Current weather for the city in your settings (Tbilisi by default) from Open-Meteo. Needs nothing. Refreshes every 15 minutes, cached for 10.
+Current weather for the city in your Settings (Tbilisi by default) from Open-Meteo. Needs nothing. Refreshes every 15 minutes, cached for 10.
 
 ## Schedule
 Today's events in your time zone, earliest first, all-day events at the top.

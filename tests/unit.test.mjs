@@ -8,6 +8,7 @@ const monitor = await import("../lib/server/monitor.ts");
 const password = await import("../lib/password.ts");
 const session = await import("../lib/session.ts");
 const commands = await import("../lib/commands.ts");
+const settings = await import("../lib/server/settings-input.ts");
 
 const TZ = "Asia/Tbilisi";
 const NOW = Date.parse("2026-10-13T08:00:00Z");
@@ -134,4 +135,13 @@ test("command answers stay honest", () => {
   assert.match(commands.answer("network", modules, results, false)[0], /NETWORK: NOT CONNECTED/);
   assert.deepEqual(commands.answer("what is the meaning of life", modules, results, false), ["NO DATA ON FILE FOR THAT. TYPE HELP."]);
   assert.ok(commands.answer("sky", modules, results, true).includes("SAMPLE DATA (DEMO IS ON)."));
+});
+
+test("settings input validation", () => {
+  const ok = { name: " LA ", language: "en", city: "Tbilisi", latitude: 41.7151, longitude: 44.8271, timeZone: "Asia/Tbilisi", currency: "GEL" };
+  assert.deepEqual(settings.parseSettings(ok), { name: "LA", language: "en", city: "Tbilisi", latitude: 41.7151, longitude: 44.8271, time_zone: "Asia/Tbilisi", currency: "GEL" });
+  assert.equal(settings.parseSettings({ ...ok, language: "ka", currency: "USD" })?.language, "ka");
+  for (const bad of [{ ...ok, name: "" }, { ...ok, name: "a".repeat(41) }, { ...ok, language: "fr" }, { ...ok, city: " " }, { ...ok, latitude: 91 }, { ...ok, latitude: "41" }, { ...ok, longitude: -181 }, { ...ok, longitude: Number.NaN }, { ...ok, timeZone: "Mars/Olympus" }, { ...ok, timeZone: "" }, { ...ok, currency: "DOGE" }, { ...ok, currency: "gel" }, [], null, "x"]) {
+    assert.equal(settings.parseSettings(bad), null);
+  }
 });
