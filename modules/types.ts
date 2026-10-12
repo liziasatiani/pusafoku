@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import type { Tr } from "@/lib/i18n";
 
 export type ModuleResult<T> =
   | { status: "ok"; data: T; fetchedAt: string }
@@ -27,7 +28,7 @@ export type ModuleDef<T> = {
   manifest: ModuleManifest;
   Panel: ComponentType<PanelProps<T>>;
   demo: () => T;
-  lines: (data: T) => string[];
+  lines: (data: T, tr: Tr) => string[];
   notConnectedHint: string;
 };
 
@@ -35,7 +36,7 @@ export type AnyModule = {
   manifest: ModuleManifest;
   Panel: ComponentType<PanelProps<unknown>>;
   demo: () => unknown;
-  lines: (data: unknown) => string[];
+  lines: (data: unknown, tr: Tr) => string[];
   notConnectedHint: string;
 };
 

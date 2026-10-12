@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Settings } from "@/lib/defaults";
+import { useTr } from "./lang";
 import styles from "./settings.module.css";
 
 export type LiveSettings = Settings & { latitude: number; longitude: number; editable: boolean };
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export default function SettingsDialog({ current, onClose, onSaved }: Props) {
+  const tr = useTr();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [name, setName] = useState(current.name);
   const [language, setLanguage] = useState<"en" | "ka">(current.language);
@@ -43,11 +45,11 @@ export default function SettingsDialog({ current, onClose, onSaved }: Props) {
     try {
       const res = await fetch(`/api/settings/search?q=${encodeURIComponent(query)}`);
       const data = (await res.json()) as { places?: Place[]; error?: string };
-      if (!res.ok) setMessage(data.error ?? "Search failed");
-      else if (!data.places || data.places.length === 0) setMessage("No place found with that name");
+      if (!res.ok) setMessage(tr(data.error ?? "Search failed"));
+      else if (!data.places || data.places.length === 0) setMessage(tr("No place found with that name"));
       else setFound(data.places);
     } catch {
-      setMessage("Could not reach the server");
+      setMessage(tr("Could not reach the server"));
     }
   }
 
@@ -67,9 +69,9 @@ export default function SettingsDialog({ current, onClose, onSaved }: Props) {
         return;
       }
       const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setMessage(data.error ?? "Could not save");
+      setMessage(tr(data.error ?? "Could not save"));
     } catch {
-      setMessage("Could not reach the server");
+      setMessage(tr("Could not reach the server"));
     } finally {
       setBusy(false);
     }
@@ -77,29 +79,29 @@ export default function SettingsDialog({ current, onClose, onSaved }: Props) {
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.dialog} role="dialog" aria-modal="true" aria-label="Settings" onClick={(event) => event.stopPropagation()}>
+      <div className={styles.dialog} role="dialog" aria-modal="true" aria-label={tr("SETTINGS")} onClick={(event) => event.stopPropagation()}>
         <header className={styles.head}>
-          <h2 className={styles.title}>SETTINGS</h2>
+          <h2 className={styles.title}>{tr("SETTINGS")}</h2>
           <button ref={closeRef} type="button" className={styles.close} onClick={onClose}>
-            CLOSE
+            {tr("CLOSE")}
           </button>
         </header>
-        {!current.editable ? <p className={styles.note}>Connect the database to save settings. These are the defaults.</p> : null}
+        {!current.editable ? <p className={styles.note}>{tr("Connect the database to save settings. These are the defaults.")}</p> : null}
         <form className={styles.form} onSubmit={save}>
           <label className={styles.field}>
-            Name
+            {tr("Name")}
             <input className={styles.control} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} required autoComplete="off" />
           </label>
           <div className={styles.row}>
             <label className={styles.field}>
-              Language
+              {tr("Language")}
               <select className={styles.control} value={language} onChange={(e) => setLanguage(e.target.value === "ka" ? "ka" : "en")}>
-                <option value="en">English</option>
-                <option value="ka">Georgian</option>
+                <option value="en">{tr("English")}</option>
+                <option value="ka">{tr("Georgian")}</option>
               </select>
             </label>
             <label className={styles.field}>
-              Currency
+              {tr("Currency")}
               <select className={styles.control} value={currency} onChange={(e) => setCurrency(e.target.value)}>
                 {CURRENCIES.map((c) => (
                   <option key={c} value={c}>
@@ -110,12 +112,12 @@ export default function SettingsDialog({ current, onClose, onSaved }: Props) {
             </label>
           </div>
           <p className={styles.place}>
-            City: <strong>{place.city}</strong> <span className="mono">{place.timeZone}</span>
+            {tr("City:")} <strong>{place.city}</strong> <span className="mono">{place.timeZone}</span>
           </p>
           <div className={styles.search}>
-            <input className={styles.control} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find another city" aria-label="Find another city" maxLength={80} autoComplete="off" />
+            <input className={styles.control} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("Find another city")} aria-label={tr("Find another city")} maxLength={80} autoComplete="off" />
             <button type="button" className={styles.find} disabled={query.trim().length < 2} onClick={(e) => void search(e)}>
-              FIND
+              {tr("FIND")}
             </button>
           </div>
           {found.length > 0 ? (
@@ -136,7 +138,7 @@ export default function SettingsDialog({ current, onClose, onSaved }: Props) {
             </p>
           ) : null}
           <button type="submit" className={styles.save} disabled={busy || !current.editable}>
-            {busy ? "SAVING" : "SAVE"}
+            {tr(busy ? "SAVING" : "SAVE")}
           </button>
         </form>
       </div>

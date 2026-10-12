@@ -1,6 +1,8 @@
 import AddForm from "@/components/hud/AddForm";
 import Panel from "@/components/hud/Panel";
 import styles from "@/components/hud/hud.module.css";
+import { useTr } from "@/components/hud/lang";
+import type { Tr } from "@/lib/i18n";
 import type { ModuleDef, PanelProps } from "@/modules/types";
 
 export type Data = { sites: { id?: string; url: string; ok: boolean | null; ms: number; checkedAt?: string | null }[] };
@@ -14,21 +16,22 @@ async function call(url: string, method: string, refresh?: () => void) {
 }
 
 function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
+  const tr = useTr();
   if (result.status !== "ok") {
     return <Panel title="Network" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
   const data = result.data;
   return (
     <Panel title="Network" demo={demo}>
-      {data.sites.length === 0 ? <p className={styles.sub}>No websites yet. Add one below.</p> : (
+      {data.sites.length === 0 ? <p className={styles.sub}>{tr("No websites yet. Add one below.")}</p> : (
         <ul className={styles.list}>
           {data.sites.map((s) => (
             <li key={s.id ?? s.url} className={styles.row}>
               <span className={styles.dot + " " + (s.ok === null ? styles.dotOff : s.ok ? styles.dotOk : styles.dotBad)} aria-hidden="true" />
               <span className="mono">{s.url}</span>
-              <span className={styles.meta + " mono"}>{s.ok === null ? "pending" : s.ok ? s.ms + " ms" : "down"}</span>
+              <span className={styles.meta + " mono"}>{s.ok === null ? tr("pending") : s.ok ? tr("{ms} ms", { ms: s.ms }) : tr("down")}</span>
               {!demo && s.id ? (
-                <button type="button" className={styles.remove} aria-label={`Remove ${s.url}`} onClick={() => void call(`/api/monitor/sites/${s.id}`, "DELETE", refresh)}>
+                <button type="button" className={styles.remove} aria-label={tr("Remove {name}", { name: s.url })} onClick={() => void call(`/api/monitor/sites/${s.id}`, "DELETE", refresh)}>
                   ✕
                 </button>
               ) : null}
@@ -40,7 +43,7 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
         <>
           <AddForm endpoint="/api/monitor/sites" field="url" placeholder="https://example.com" label="Website address" max={500} onDone={refresh} />
           <button type="button" className={styles.btn} onClick={() => void call("/api/monitor/check", "POST", refresh)}>
-            CHECK NOW
+            {tr("CHECK NOW")}
           </button>
         </>
       )}
@@ -48,11 +51,11 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
   );
 }
 
-function toLines(data: Data): string[] {
-  if (data.sites.length === 0) return ["No websites are being watched."];
+function toLines(data: Data, tr: Tr): string[] {
+  if (data.sites.length === 0) return [tr("No websites are being watched.")];
   const down = data.sites.filter((s) => s.ok === false);
-  const lines = data.sites.map((s) => (s.ok === null ? s.url + " not checked yet." : s.url + (s.ok ? " " + s.ms + " ms. OK." : " no response. DOWN.")));
-  return down.length === 0 ? lines : lines.concat(down.length + " asset" + (down.length > 1 ? "s" : "") + " down.");
+  const lines = data.sites.map((s) => (s.ok === null ? tr("{url} not checked yet.", { url: s.url }) : s.ok ? tr("{url} {ms} ms. OK.", { url: s.url, ms: s.ms }) : tr("{url} no response. DOWN.", { url: s.url })));
+  return down.length === 0 ? lines : lines.concat(tr(down.length > 1 ? "{n} assets down." : "{n} asset down.", { n: down.length }));
 }
 
 const def: ModuleDef<Data> = {

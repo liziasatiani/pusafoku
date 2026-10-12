@@ -2,6 +2,8 @@ import AddForm from "@/components/hud/AddForm";
 import EventForm from "@/components/hud/EventForm";
 import Panel from "@/components/hud/Panel";
 import styles from "@/components/hud/hud.module.css";
+import { useTr } from "@/components/hud/lang";
+import type { Tr } from "@/lib/i18n";
 import more from "@/components/hud/calendar.module.css";
 import type { ModuleDef, PanelProps } from "@/modules/types";
 
@@ -21,9 +23,12 @@ async function call(url: string, method: string, refresh?: () => void) {
   }
 }
 
+const HELP = "Google: Settings, your calendar, Integrate calendar, Secret address in iCal format. Apple: Share calendar, Public Calendar, copy the link. Outlook: Settings, Shared calendars, Publish a calendar, copy the ICS link. The address is stored privately and never shown again.";
+
 const REPEAT_LABEL: Record<string, string> = { none: "", daily: "every day", weekly: "every week", monthly: "every month", yearly: "every year" };
 
 function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
+  const tr = useTr();
   if (result.status !== "ok") {
     return <Panel title="Schedule" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
@@ -34,37 +39,37 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
   return (
     <Panel title="Schedule" demo={demo}>
       {data.events.length === 0 ? (
-        <p className={styles.sub}>No events today.</p>
+        <p className={styles.sub}>{tr("No events today.")}</p>
       ) : (
         <ul className={styles.list}>
           {data.events.map((e, i) => (
             <li key={`${e.time}-${e.title}-${i}`} className={styles.row}>
-              <span className={styles.time + " mono"}>{e.time}</span>
+              <span className={styles.time + " mono"}>{tr(e.time)}</span>
               <span>{e.title}</span>
             </li>
           ))}
         </ul>
       )}
-      {data.failed ? <p className={styles.meta}>{data.failed} calendar{data.failed > 1 ? "s" : ""} could not be read</p> : null}
+      {data.failed ? <p className={styles.meta}>{tr(data.failed > 1 ? "{n} calendars could not be read" : "{n} calendar could not be read", { n: data.failed })}</p> : null}
       {manage && refresh ? (
         <div className={more.manage}>
           <details className={more.group}>
-            <summary className={more.summary}>Add an event</summary>
+            <summary className={more.summary}>{tr("Add an event")}</summary>
             <EventForm onDone={refresh} />
           </details>
           <details className={more.group}>
-            <summary className={more.summary}>My events ({mine.length})</summary>
+            <summary className={more.summary}>{tr("My events ({n})", { n: mine.length })}</summary>
             {mine.length === 0 ? (
-              <p className={styles.meta}>Nothing saved yet.</p>
+              <p className={styles.meta}>{tr("Nothing saved yet.")}</p>
             ) : (
               <ul className={styles.list}>
                 {mine.map((m) => (
                   <li key={m.id} className={styles.row}>
                     <span className={styles.time + " mono"}>{m.day.slice(5)}</span>
                     <span>
-                      {m.title} <span className={styles.meta}>{[m.start, REPEAT_LABEL[m.repeat]].filter(Boolean).join(" · ")}</span>
+                      {m.title} <span className={styles.meta}>{[m.start, REPEAT_LABEL[m.repeat] ? tr(REPEAT_LABEL[m.repeat]) : ""].filter(Boolean).join(" · ")}</span>
                     </span>
-                    <button type="button" className={styles.remove} aria-label={`Delete ${m.title}`} onClick={() => void call(`/api/events/${m.id}`, "DELETE", refresh)}>
+                    <button type="button" className={styles.remove} aria-label={tr("Delete {title}", { title: m.title })} onClick={() => void call(`/api/events/${m.id}`, "DELETE", refresh)}>
                       ✕
                     </button>
                   </li>
@@ -73,13 +78,13 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
             )}
           </details>
           <details className={more.group}>
-            <summary className={more.summary}>Connect a calendar ({sources.length}/5)</summary>
+            <summary className={more.summary}>{tr("Connect a calendar ({n}/5)", { n: sources.length })}</summary>
             {sources.length > 0 ? (
               <ul className={styles.chips}>
                 {sources.map((s) => (
                   <li key={s.id} className={styles.chip}>
                     <span className="mono">{s.label}</span>
-                    <button type="button" className={styles.remove} aria-label={`Disconnect ${s.label}`} onClick={() => void call(`/api/calendar/sources/${s.id}`, "DELETE", refresh)}>
+                    <button type="button" className={styles.remove} aria-label={tr("Disconnect {name}", { name: s.label })} onClick={() => void call(`/api/calendar/sources/${s.id}`, "DELETE", refresh)}>
                       ✕
                     </button>
                   </li>
@@ -87,9 +92,7 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
               </ul>
             ) : null}
             <AddForm endpoint="/api/calendar/sources" field="url" placeholder="Paste the calendar address" label="Calendar address" max={1200} onDone={refresh} />
-            <p className={more.help}>
-              Google: Settings, your calendar, Integrate calendar, Secret address in iCal format. Apple: Share calendar, Public Calendar, copy the link. Outlook: Settings, Shared calendars, Publish a calendar, copy the ICS link. The address is stored privately and never shown again.
-            </p>
+            <p className={more.help}>{tr(HELP)}</p>
           </details>
         </div>
       ) : null}
@@ -97,8 +100,8 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
   );
 }
 
-function toLines(data: Data): string[] {
-  return data.events.length === 0 ? ["Nothing scheduled today."] : data.events.map((e) => e.time + " " + e.title);
+function toLines(data: Data, tr: Tr): string[] {
+  return data.events.length === 0 ? [tr("Nothing scheduled today.")] : data.events.map((e) => tr(e.time) + " " + e.title);
 }
 
 const def: ModuleDef<Data> = {

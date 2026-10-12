@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { AnyModule, ModuleResult } from "@/modules/types";
+import { useTr } from "./lang";
 import styles from "./casefile.module.css";
 
 type Props = {
@@ -18,10 +19,11 @@ function stamp(result: ModuleResult<unknown>, demo: boolean): string {
 }
 
 export default function CaseFile({ mod, result, demo, onClose }: Props) {
+  const tr = useTr();
   const closeRef = useRef<HTMLButtonElement>(null);
   const { id, name, description, env, refreshSeconds } = mod.manifest;
-  const lines = result.status === "ok" ? mod.lines(result.data) : [result.status === "error" ? result.message : result.hint];
-  const updated = result.status === "ok" ? new Date(result.fetchedAt).toLocaleTimeString("en-GB") : "NEVER";
+  const lines = result.status === "ok" ? mod.lines(result.data, tr) : [tr(result.status === "error" ? result.message : result.hint)];
+  const updated = result.status === "ok" ? new Date(result.fetchedAt).toLocaleTimeString("en-GB") : tr("NEVER");
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -34,27 +36,27 @@ export default function CaseFile({ mod, result, demo, onClose }: Props) {
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <article className={styles.file} role="dialog" aria-modal="true" aria-label={`${name} file`} onClick={(event) => event.stopPropagation()}>
+      <article className={styles.file} role="dialog" aria-modal="true" aria-label={tr("{name} file", { name: tr(name) })} onClick={(event) => event.stopPropagation()}>
         <header className={styles.head}>
-          <p className={styles.kind}>CASE FILE</p>
+          <p className={styles.kind}>{tr("CASE FILE")}</p>
           <p className={styles.ref}>PSF-{id.toUpperCase()}</p>
           <span className={styles.stamp} data-tone={result.status === "ok" ? "ok" : "off"}>
-            {stamp(result, demo)}
+            {tr(stamp(result, demo))}
           </span>
-          <button ref={closeRef} type="button" className={styles.close} onClick={onClose} aria-label="Close file">
-            CLOSE
+          <button ref={closeRef} type="button" className={styles.close} onClick={onClose} aria-label={tr("Close file")}>
+            {tr("CLOSE")}
           </button>
         </header>
-        <h2 className={styles.title}>{name.toUpperCase()}</h2>
+        <h2 className={styles.title}>{tr(name).toUpperCase()}</h2>
         <dl className={styles.fields}>
-          <dt>Subject</dt>
-          <dd>{description}</dd>
-          <dt>Updated</dt>
+          <dt>{tr("Subject")}</dt>
+          <dd>{tr(description)}</dd>
+          <dt>{tr("Updated")}</dt>
           <dd>{updated}</dd>
-          <dt>Refresh</dt>
-          <dd>every {refreshSeconds >= 60 ? `${Math.round(refreshSeconds / 60)} min` : `${refreshSeconds} s`}</dd>
-          <dt>Source</dt>
-          <dd>{env.length === 0 ? "none needed" : env.join(", ")}</dd>
+          <dt>{tr("Refresh")}</dt>
+          <dd>{refreshSeconds >= 60 ? tr("every {n} min", { n: Math.round(refreshSeconds / 60) }) : tr("every {n} s", { n: refreshSeconds })}</dd>
+          <dt>{tr("Source")}</dt>
+          <dd>{env.length === 0 ? tr("none needed") : env.join(", ")}</dd>
         </dl>
         <ul className={styles.entries}>
           {lines.map((line, index) => (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useTr } from "./lang";
 import styles from "./addform.module.css";
 
 type Props = {
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export default function AddForm({ endpoint, field, placeholder, label, max, onDone }: Props) {
+  const tr = useTr();
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -33,10 +35,10 @@ export default function AddForm({ endpoint, field, placeholder, label, max, onDo
         onDone();
       } else {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(data.error ?? "Could not save");
+        setError(tr(data.error ?? "Could not save"));
       }
     } catch {
-      setError("Could not reach the server");
+      setError(tr("Could not reach the server"));
     } finally {
       setBusy(false);
     }
@@ -44,9 +46,9 @@ export default function AddForm({ endpoint, field, placeholder, label, max, onDo
 
   return (
     <form className={styles.form} onSubmit={submit}>
-      <input className={styles.input} value={value} onChange={(e) => setValue(e.target.value)} placeholder={placeholder} aria-label={label} maxLength={max} autoComplete="off" />
+      <input className={styles.input} value={value} onChange={(e) => setValue(e.target.value)} placeholder={tr(placeholder)} aria-label={tr(label)} maxLength={max} autoComplete="off" />
       <button type="submit" className={styles.add} disabled={busy || value.trim().length === 0}>
-        ADD
+        {tr("ADD")}
       </button>
       {error ? (
         <p className={styles.error} role="alert">

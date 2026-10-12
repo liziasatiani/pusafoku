@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { SUGGESTIONS } from "@/lib/commands";
+import { SUGGESTIONS } from "@/lib/i18n";
+import { useLang, useTr } from "./lang";
 import { installLocalSpeech, localeFor, localSpeech, recognizerCtor, speakLines, stopSpeaking, type LocalSpeech, type Recognizer, type VoiceLang } from "./speech";
 import styles from "./commandline.module.css";
 
@@ -19,6 +20,8 @@ const PREFS_KEY = "pusafoku.voice";
 type Entry = { id: number; kind: "in" | "out"; text: string };
 
 export default function CommandLine({ ask, onMode, compact, defaultLang = "en" }: Props) {
+  const tr = useTr();
+  const uiLang = useLang();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [value, setValue] = useState("");
   const run = useRef(0);
@@ -107,9 +110,9 @@ export default function CommandLine({ ask, onMode, compact, defaultLang = "en" }
     stopSpeaking();
     setNote("");
     if (local === "downloadable") {
-      setNote("Downloading the on-device voice pack. Nothing is recorded or uploaded.");
+      setNote(tr("Downloading the on-device voice pack. Nothing is recorded or uploaded."));
       const installed = await installLocalSpeech(lang);
-      setNote(installed ? "Voice pack installed. Tap MIC again." : "The on-device voice pack could not be installed, so the microphone stays off.");
+      setNote(tr(installed ? "Voice pack installed. Tap MIC again." : "The on-device voice pack could not be installed, so the microphone stays off."));
       if (installed) setLocal("ready");
       return;
     }
@@ -125,13 +128,15 @@ export default function CommandLine({ ask, onMode, compact, defaultLang = "en" }
     };
     rec.onerror = (event) => {
       setNote(
-        event.error === "not-allowed" || event.error === "service-not-allowed"
-          ? "Microphone is blocked. Allow it in the browser address bar."
-          : event.error === "language-not-supported"
-            ? "This language is not available on this device, so the microphone stays off."
-            : event.error === "no-speech"
-              ? "Heard nothing. Try again."
-              : "Voice input failed. Type instead.",
+        tr(
+          event.error === "not-allowed" || event.error === "service-not-allowed"
+            ? "Microphone is blocked. Allow it in the browser address bar."
+            : event.error === "language-not-supported"
+              ? "This language is not available on this device, so the microphone stays off."
+              : event.error === "no-speech"
+                ? "Heard nothing. Try again."
+                : "Voice input failed. Type instead.",
+        ),
       );
     };
     rec.onend = () => {
@@ -168,7 +173,7 @@ export default function CommandLine({ ask, onMode, compact, defaultLang = "en" }
         </div>
       ) : null}
       <div className={styles.sugg}>
-        {SUGGESTIONS.map((s) => (
+        {SUGGESTIONS[uiLang].map((s) => (
           <button key={s} type="button" className={styles.suggBtn} onClick={() => void submit(s)}>
             {s}
           </button>
@@ -181,20 +186,20 @@ export default function CommandLine({ ask, onMode, compact, defaultLang = "en" }
           aria-pressed={listening}
           disabled={local === "unavailable"}
           onClick={() => void toggleListening()}
-          title={local === "unavailable" ? "On-device speech is not available here, so the microphone is off" : "Speech is understood on this device. Audio is not sent or stored anywhere."}
+          title={tr(local === "unavailable" ? "On-device speech is not available here, so the microphone is off" : "Speech is understood on this device. Audio is not sent or stored anywhere.")}
         >
-          {listening ? "LISTENING" : "MIC"}
+          {tr(listening ? "LISTENING" : "MIC")}
         </button>
         <button type="button" className={styles.tog} aria-pressed={speak} onClick={() => { const next = !speak; setSpeak(next); if (!next) stopSpeaking(); savePrefs({ speak: next, lang }); }}>
-          SPEAK REPLIES
+          {tr("SPEAK REPLIES")}
         </button>
-        <button type="button" className={styles.tog} onClick={() => { const next: VoiceLang = lang === "en" ? "ka" : "en"; setLang(next); savePrefs({ speak, lang: next }); }} title="Language for the microphone and spoken replies">
+        <button type="button" className={styles.tog} onClick={() => { const next: VoiceLang = lang === "en" ? "ka" : "en"; setLang(next); savePrefs({ speak, lang: next }); }} title={tr("Language for the microphone and spoken replies")}>
           {lang === "en" ? "EN" : "KA"}
         </button>
       </div>
       {local === "unavailable" && !note ? (
         <p className={styles.info} role="status">
-          The microphone is off: this browser cannot understand {lang === "ka" ? "Georgian" : "English"} speech on the device, and audio is never sent to an outside service. Typing works.
+          {tr("The microphone is off: this browser cannot understand {lang} speech on the device, and audio is never sent to an outside service. Typing works.", { lang: tr(lang === "ka" ? "Georgian" : "English") })}
         </p>
       ) : null}
       {note ? (
@@ -206,9 +211,9 @@ export default function CommandLine({ ask, onMode, compact, defaultLang = "en" }
         <label htmlFor="cmd" className={styles.caret}>
           &gt;
         </label>
-        <input id="cmd" className={styles.input} value={value} onChange={(e) => setValue(e.target.value)} autoComplete="off" placeholder="Type a command. Try: start my day" />
+        <input id="cmd" className={styles.input} value={value} onChange={(e) => setValue(e.target.value)} autoComplete="off" placeholder={tr("Type a command. Try: start my day")} />
         <button type="submit" className={styles.send}>
-          SEND
+          {tr("SEND")}
         </button>
       </form>
     </div>

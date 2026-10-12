@@ -1,54 +1,64 @@
+import { SUGGESTIONS, translate, type Lang } from "@/lib/i18n";
 import type { AnyModule, ModuleResult } from "@/modules/types";
 
 export type Results = Map<string, ModuleResult<unknown>>;
 
+export { SUGGESTIONS };
+
 const ROUTES: { id: string; words: RegExp }[] = [
-  { id: "weather", words: /sky|weather|rain|temperature/ },
-  { id: "calendar", words: /schedule|calendar|meeting|event/ },
-  { id: "tasks", words: /operation|task|todo|to-do/ },
-  { id: "notes", words: /archive|note/ },
-  { id: "rss", words: /signal|news|feed|headline/ },
-  { id: "monitor", words: /network|site|website|down|asset|uptime/ },
-  { id: "inbox", words: /authori[sz]|approv|waiting/ },
-  { id: "clock", words: /time|date|clock|today/ },
+  { id: "weather", words: /sky|weather|rain|temperature|ამინდ|(^|\s)ცა($|\s)/ },
+  { id: "calendar", words: /schedule|calendar|meeting|event|განრიგ|კალენდარ|შეხვედრ|ღონისძიებ/ },
+  { id: "tasks", words: /operation|task|todo|to-do|ოპერაცი|ამოცან|საქმე/ },
+  { id: "notes", words: /archive|note|არქივ|ჩანაწერ|შენიშვნ/ },
+  { id: "rss", words: /signal|news|feed|headline|სიგნალ|სიახლე|ამბ/ },
+  { id: "monitor", words: /network|site|website|down|asset|uptime|ქსელ|საიტ|ვებგვერდ/ },
+  { id: "inbox", words: /authori[sz]|approv|waiting|ავტორიზაც|დასტურ|მომლოდინე/ },
+  { id: "clock", words: /time|date|clock|today|დრო|საათ|თარიღ/ },
 ];
 
-export const SUGGESTIONS = ["start my day", "authorizations", "network", "sky", "help"];
+const DAY = /\b(day|brief|morning|summary)\b|დღ(ის|ე)|დილ|მოკლე/;
+const HELP = /help|\?|what can|დახმარებ/;
 
-function linesFor(mod: AnyModule, result: ModuleResult<unknown> | undefined): string[] {
-  const name = mod.manifest.name.toUpperCase();
-  if (!result || result.status === "not_connected") return [`${name}: NOT CONNECTED. ${mod.notConnectedHint}`];
-  if (result.status === "error") return [`${name}: ERROR. ${result.message}`];
-  return mod.lines(result.data).map((line) => line.toUpperCase());
-}
-
-function greeting(): string {
+function greetingKey(): string {
   const hour = new Date().getHours();
-  if (hour < 5) return "GOOD NIGHT";
-  if (hour < 12) return "GOOD MORNING";
-  if (hour < 18) return "GOOD AFTERNOON";
-  return "GOOD EVENING";
+  if (hour < 5) return "Good night";
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
-export function answer(input: string, modules: AnyModule[], results: Results, demo: boolean): string[] {
+function write(lang: Lang) {
+  const tr = (text: string, vars?: Record<string, string | number>) => translate(lang, text, vars);
+  const shout = (line: string) => (lang === "en" ? line.toUpperCase() : line);
+  return { tr, shout };
+}
+
+export function answer(input: string, modules: AnyModule[], results: Results, demo: boolean, lang: Lang = "en"): string[] {
+  const { tr, shout } = write(lang);
   const text = input.trim().toLowerCase();
   const byId = new Map(modules.map((m) => [m.manifest.id, m]));
-  const tag = demo ? ["SAMPLE DATA (DEMO IS ON)."] : [];
-  if (/\b(day|brief|morning|summary)\b/.test(text)) {
-    const order = ["calendar", "weather", "tasks", "inbox", "monitor", "rss"];
-    const out = [`${greeting()}.`];
-    for (const id of order) {
+
+  const linesFor = (mod: AnyModule): string[] => {
+    const result = results.get(mod.manifest.id);
+    const name = tr(mod.manifest.name);
+    if (!result || result.status === "not_connected") return [shout(tr("{name}: NOT CONNECTED. {hint}", { name, hint: tr(mod.notConnectedHint) }))];
+    if (result.status === "error") return [shout(tr("{name}: ERROR. {message}", { name, message: tr(result.message) }))];
+    return mod.lines(result.data, tr).map(shout);
+  };
+
+  const tag = demo ? [shout(tr("SAMPLE DATA (DEMO IS ON)."))] : [];
+  if (DAY.test(text)) {
+    const out = [shout(tr(greetingKey()) + ".")];
+    for (const id of ["calendar", "weather", "tasks", "inbox", "monitor", "rss"]) {
       const mod = byId.get(id);
-      if (mod) out.push(...linesFor(mod, results.get(id)));
+      if (mod) out.push(...linesFor(mod));
     }
     return out.concat(tag);
   }
-  if (/help|\?|what can/.test(text)) {
-    return ["COMMANDS: START MY DAY / AUTHORIZATIONS / NETWORK / SKY / SCHEDULE / OPERATIONS / SIGNALS / ARCHIVE", "ANYTHING ELSE: NO DATA ON FILE."];
-  }
+  if (HELP.test(text)) return [tr("COMMANDS: START MY DAY / AUTHORIZATIONS / NETWORK / SKY / SCHEDULE / OPERATIONS / SIGNALS / ARCHIVE"), tr("ANYTHING ELSE: NO DATA ON FILE.")];
   for (const route of ROUTES) {
     const mod = byId.get(route.id);
-    if (mod && route.words.test(text)) return linesFor(mod, results.get(route.id)).concat(tag);
+    if (mod && route.words.test(text)) return linesFor(mod).concat(tag);
   }
-  return ["NO DATA ON FILE FOR THAT. TYPE HELP."];
+  return [tr("NO DATA ON FILE FOR THAT. TYPE HELP.")];
 }

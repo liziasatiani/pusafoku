@@ -1,6 +1,8 @@
 import AddForm from "@/components/hud/AddForm";
 import Panel from "@/components/hud/Panel";
 import styles from "@/components/hud/hud.module.css";
+import { useTr } from "@/components/hud/lang";
+import type { Tr } from "@/lib/i18n";
 import type { ModuleDef, PanelProps } from "@/modules/types";
 
 export type Data = {
@@ -18,6 +20,7 @@ async function removeFeed(id: string, refresh?: () => void) {
 }
 
 function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
+  const tr = useTr();
   if (result.status !== "ok") {
     return <Panel title="Signals" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
@@ -26,7 +29,7 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
   return (
     <Panel title="Signals" demo={demo}>
       {data.items.length === 0 ? (
-        <p className={styles.sub}>{feeds.length === 0 ? "No feeds yet. Add one below." : "No headlines available right now."}</p>
+        <p className={styles.sub}>{feeds.length === 0 ? tr("No feeds yet. Add one below.") : tr("No headlines available right now.")}</p>
       ) : (
         <ul className={styles.list}>
           {data.items.map((n, index) => (
@@ -46,7 +49,7 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
           ))}
         </ul>
       )}
-      {data.failed ? <p className={styles.meta}>{data.failed} feed{data.failed > 1 ? "s" : ""} unreachable</p> : null}
+      {data.failed ? <p className={styles.meta}>{tr(data.failed > 1 ? "{n} feeds unreachable" : "{n} feed unreachable", { n: data.failed })}</p> : null}
       {demo || !refresh ? null : (
         <>
           {feeds.length > 0 ? (
@@ -54,7 +57,7 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
               {feeds.map((f) => (
                 <li key={f.id} className={styles.chip}>
                   <span className="mono">{f.label}</span>
-                  <button type="button" className={styles.remove} aria-label={`Remove ${f.label}`} onClick={() => void removeFeed(f.id, refresh)}>
+                  <button type="button" className={styles.remove} aria-label={tr("Remove {name}", { name: f.label })} onClick={() => void removeFeed(f.id, refresh)}>
                     ✕
                   </button>
                 </li>
@@ -68,8 +71,8 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
   );
 }
 
-function toLines(data: Data): string[] {
-  if (data.items.length === 0) return ["No new signals."];
+function toLines(data: Data, tr: Tr): string[] {
+  if (data.items.length === 0) return [tr("No new signals.")];
   return data.items.slice(0, 6).map((i) => i.title + " (" + i.source + (i.ago ? ", " + i.ago : "") + ")");
 }
 

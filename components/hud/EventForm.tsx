@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useTr } from "./lang";
 import styles from "./eventform.module.css";
 
 function todayLocal(): string {
@@ -11,6 +12,7 @@ function todayLocal(): string {
 }
 
 export default function EventForm({ onDone }: { onDone: () => void }) {
+  const tr = useTr();
   const [title, setTitle] = useState("");
   const [day, setDay] = useState(todayLocal);
   const [start, setStart] = useState("");
@@ -37,10 +39,10 @@ export default function EventForm({ onDone }: { onDone: () => void }) {
         onDone();
       } else {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(data.error ?? "Could not save");
+        setError(tr(data.error ?? "Could not save"));
       }
     } catch {
-      setError("Could not reach the server");
+      setError(tr("Could not reach the server"));
     } finally {
       setBusy(false);
     }
@@ -48,36 +50,36 @@ export default function EventForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form className={styles.form} onSubmit={submit}>
-      <input className={styles.control} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What is happening" aria-label="Event title" maxLength={200} autoComplete="off" required />
+      <input className={styles.control} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tr("What is happening")} aria-label={tr("Event title")} maxLength={200} autoComplete="off" required />
       <div className={styles.row}>
         <label className={styles.field}>
-          Date
+          {tr("Date")}
           <input className={styles.control} type="date" value={day} onChange={(e) => setDay(e.target.value)} required />
         </label>
         <label className={styles.field}>
-          Repeats
+          {tr("Repeats")}
           <select className={styles.control} value={repeat} onChange={(e) => setRepeat(e.target.value)}>
-            <option value="none">Never</option>
-            <option value="daily">Every day</option>
-            <option value="weekly">Every week</option>
-            <option value="monthly">Every month</option>
-            <option value="yearly">Every year</option>
+            <option value="none">{tr("Never")}</option>
+            <option value="daily">{tr("Every day")}</option>
+            <option value="weekly">{tr("Every week")}</option>
+            <option value="monthly">{tr("Every month")}</option>
+            <option value="yearly">{tr("Every year")}</option>
           </select>
         </label>
       </div>
       <div className={styles.row}>
         <label className={styles.field}>
-          Starts
+          {tr("Starts")}
           <input className={styles.control} type="time" value={start} onChange={(e) => setStart(e.target.value)} />
         </label>
         <label className={styles.field}>
-          Ends
+          {tr("Ends")}
           <input className={styles.control} type="time" value={end} onChange={(e) => setEnd(e.target.value)} disabled={!start} />
         </label>
       </div>
-      <p className={styles.hint}>Leave the times empty for an all-day event.</p>
+      <p className={styles.hint}>{tr("Leave the times empty for an all-day event.")}</p>
       <button type="submit" className={styles.save} disabled={busy || title.trim().length === 0}>
-        ADD EVENT
+        {tr("ADD EVENT")}
       </button>
       {error ? (
         <p className={styles.error} role="alert">

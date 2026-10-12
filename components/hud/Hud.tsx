@@ -6,7 +6,9 @@ import CaseFile from "@/components/hud/CaseFile";
 import CommandLine, { type Mode } from "@/components/hud/CommandLine";
 import DigitGlobe, { type CoreState } from "@/components/hud/DigitGlobe";
 import SettingsDialog, { type LiveSettings } from "@/components/hud/SettingsDialog";
+import { LangContext } from "@/components/hud/lang";
 import { DEFAULT_SETTINGS } from "@/lib/defaults";
+import { translate, type Vars } from "@/lib/i18n";
 import { answer, type Results } from "@/lib/commands";
 import { useLayout, type TileLayout } from "@/components/hud/useLayout";
 import { MODULES } from "@/modules/registry";
@@ -183,153 +185,161 @@ export default function Hud() {
   const results = useMemo<Results>(() => new Map(MODULES.map((m) => [m.manifest.id, resultFor(m, demo, live, settings)])), [demo, live, settings]);
   const fileMod = openFile ? byId.get(openFile) : undefined;
   const fileResult = openFile ? results.get(openFile) : undefined;
-  const ask = (input: string) => answer(input, MODULES, results, demo);
+  const lang = settings.language;
+  const tr = (text: string, vars?: Vars) => translate(lang, text, vars);
+  const ask = (input: string) => answer(input, MODULES, results, demo, lang);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
   const onMode = (mode: Mode) => setCoreState(mode === "listening" ? "listening" : mode === "speaking" ? "speaking" : "idle");
   const visible = layout.filter((t) => !t.hidden);
   const hidden = layout.filter((t) => t.hidden);
   const sizeClass = { S: styles.sizeS, M: styles.sizeM, L: styles.sizeL } as const;
 
   return (
-    <div className={`${styles.root} ${kiosk ? styles.kiosk : ""}`} data-ready={!intro}>
-      {intro ? <NameIntro onDone={finishIntro} /> : null}
-      <header className={styles.bar}>
-        <h1 className={styles.brand}>PUSAFOKU</h1>
-        <div className={styles.controls}>
-          <button type="button" className={styles.chip} aria-pressed={demo} onClick={() => setDemo((v) => !v)}>
-            DEMO
-          </button>
-          <button type="button" className={styles.chip} aria-pressed={edit} onClick={() => setEdit((v) => !v)}>
-            LAYOUT
-          </button>
-          <button type="button" className={styles.chip} onClick={switchView} title="Switch between the wall and the command line">
-            {view === "line" ? "WALL" : "LINE"}
-          </button>
-          <button type="button" className={styles.chip} aria-pressed={kiosk} onClick={() => setKiosk((v) => !v)} title="Kiosk mode (F)">
-            KIOSK
-          </button>
-          <button type="button" className={styles.chip} onClick={() => setIntro(true)} title="Replay the opening">
-            INTRO
-          </button>
-          <button type="button" className={styles.chip} onClick={() => setShowSettings(true)}>
-            SETTINGS
-          </button>
-          <button type="button" className={styles.chip} onClick={cycleTheme} title="Theme">
-            {theme.toUpperCase()}
-          </button>
-        </div>
-      </header>
-
-      {edit && hidden.length > 0 ? (
-        <div className={styles.controls} aria-label="Hidden panels">
-          {hidden.map((t) => (
-            <button key={t.id} type="button" className={styles.chip} onClick={() => toggle(t.id)}>
-              + {byId.get(t.id)?.manifest.name}
+    <LangContext.Provider value={lang}>
+      <div className={`${styles.root} ${kiosk ? styles.kiosk : ""}`} data-ready={!intro}>
+        {intro ? <NameIntro onDone={finishIntro} /> : null}
+        <header className={styles.bar}>
+          <h1 className={styles.brand}>PUSAFOKU</h1>
+          <div className={styles.controls}>
+            <button type="button" className={styles.chip} aria-pressed={demo} onClick={() => setDemo((v) => !v)}>
+              {tr("DEMO")}
             </button>
-          ))}
-          <button type="button" className={styles.chip} onClick={reset}>
-            RESET
-          </button>
-        </div>
-      ) : null}
+            <button type="button" className={styles.chip} aria-pressed={edit} onClick={() => setEdit((v) => !v)}>
+              {tr("LAYOUT")}
+            </button>
+            <button type="button" className={styles.chip} onClick={switchView} title={tr("Switch between the wall and the command line")}>
+              {tr(view === "line" ? "WALL" : "LINE")}
+            </button>
+            <button type="button" className={styles.chip} aria-pressed={kiosk} onClick={() => setKiosk((v) => !v)} title={tr("Kiosk mode (F)")}>
+              {tr("KIOSK")}
+            </button>
+            <button type="button" className={styles.chip} onClick={() => setIntro(true)} title={tr("Replay the opening")}>
+              {tr("INTRO")}
+            </button>
+            <button type="button" className={styles.chip} onClick={() => setShowSettings(true)}>
+              {tr("SETTINGS")}
+            </button>
+            <button type="button" className={styles.chip} onClick={cycleTheme} title={tr("Theme")}>
+              {tr(theme.toUpperCase())}
+            </button>
+          </div>
+        </header>
 
-      {view === "line" ? (
-        <main className={styles.lineView}>
-          <DigitGlobe state={coreState} marker={demo} className={styles.lineGlobe} />
-          <ul className={styles.status}>
-            {STATUS_IDS.map((id) => {
-              const mod = byId.get(id);
-              const result = results.get(id);
-              if (!mod || !result) return null;
-              return (
-                <li key={id}>
-                  <button type="button" className={styles.statusItem} onClick={() => setOpenFile(id)}>
-                    <span className={styles.statusName}>{mod.manifest.name}</span>
-                    <span className={styles.statusVal}>{result.status === "ok" ? mod.lines(result.data)[0] : "not connected"}</span>
+        {edit && hidden.length > 0 ? (
+          <div className={styles.controls} aria-label={tr("Hidden panels")}>
+            {hidden.map((t) => (
+              <button key={t.id} type="button" className={styles.chip} onClick={() => toggle(t.id)}>
+                + {tr(byId.get(t.id)?.manifest.name ?? "")}
+              </button>
+            ))}
+            <button type="button" className={styles.chip} onClick={reset}>
+              {tr("RESET")}
+            </button>
+          </div>
+        ) : null}
+
+        {view === "line" ? (
+          <main className={styles.lineView}>
+            <DigitGlobe state={coreState} marker={demo} className={styles.lineGlobe} />
+            <ul className={styles.status}>
+              {STATUS_IDS.map((id) => {
+                const mod = byId.get(id);
+                const result = results.get(id);
+                if (!mod || !result) return null;
+                return (
+                  <li key={id}>
+                    <button type="button" className={styles.statusItem} onClick={() => setOpenFile(id)}>
+                      <span className={styles.statusName}>{tr(mod.manifest.name)}</span>
+                      <span className={styles.statusVal}>{result.status === "ok" ? mod.lines(result.data, tr)[0] : tr("Not connected")}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className={styles.lineCli}>
+              <CommandLine ask={ask} onMode={onMode} defaultLang={settings.language} />
+            </div>
+          </main>
+        ) : null}
+
+        <main className={styles.grid} hidden={view !== "wall"}>
+          <section className={styles.coreTile} aria-label={tr("Core")}>
+            <span className={styles.stateTag} role="status" aria-live="polite">{tr(coreState)}</span>
+            <div className={styles.coreStage}>
+              <DigitGlobe state={coreState} marker={demo} />
+            </div>
+            <div className={styles.coreBar}>
+              <CommandLine ask={ask} onMode={onMode} defaultLang={settings.language} compact />
+              {demo ? (
+                <div className={styles.stateRow}>
+                  {STATES.map((st) => (
+                    <button key={st} type="button" className={styles.chip} aria-pressed={coreState === st} onClick={() => setCoreState(st)}>
+                      {tr(st)}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </section>
+
+          {visible.map((tile) => {
+            const mod = byId.get(tile.id);
+            if (!mod) return null;
+            const Panel = mod.Panel;
+            const result = results.get(tile.id) ?? resultFor(mod, demo, live, settings);
+            return (
+              <div key={tile.id} className={`${styles.tile} ${sizeClass[tile.size]}`}>
+                <div className={styles.tileInner}>
+                  {edit ? (
+                    <div className={styles.editBar}>
+                      <button type="button" className={styles.editBtn} onClick={() => move(tile.id, -1)} aria-label={tr("Move {name} earlier", { name: tr(mod.manifest.name) })}>
+                        ↑
+                      </button>
+                      <button type="button" className={styles.editBtn} onClick={() => move(tile.id, 1)} aria-label={tr("Move {name} later", { name: tr(mod.manifest.name) })}>
+                        ↓
+                      </button>
+                      <button type="button" className={styles.editBtn} onClick={() => resize(tile.id)} aria-label={tr("Resize {name}", { name: tr(mod.manifest.name) })}>
+                        {tile.size}
+                      </button>
+                      <button type="button" className={styles.editBtn} onClick={() => toggle(tile.id)} aria-label={tr("Hide {name}", { name: tr(mod.manifest.name) })}>
+                        ✕
+                      </button>
+                    </div>
+                  ) : null}
+                  <button type="button" className={styles.fileBtn} onClick={() => setOpenFile(tile.id)} aria-label={tr("Open {name} file", { name: tr(mod.manifest.name) })}>
+                    {tr("FILE")}
                   </button>
-                </li>
-              );
-            })}
-          </ul>
-          <div className={styles.lineCli}>
-            <CommandLine ask={ask} onMode={onMode} defaultLang={settings.language} />
-          </div>
-        </main>
-      ) : null}
-
-      <main className={styles.grid} hidden={view !== "wall"}>
-        <section className={styles.coreTile} aria-label="Core">
-          <span className={styles.stateTag} role="status" aria-live="polite">{coreState}</span>
-          <div className={styles.coreStage}>
-            <DigitGlobe state={coreState} marker={demo} />
-          </div>
-          <div className={styles.coreBar}>
-            <CommandLine ask={ask} onMode={onMode} defaultLang={settings.language} compact />
-            {demo ? (
-              <div className={styles.stateRow}>
-                {STATES.map((st) => (
-                  <button key={st} type="button" className={styles.chip} aria-pressed={coreState === st} onClick={() => setCoreState(st)}>
-                    {st}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </section>
-
-        {visible.map((tile) => {
-          const mod = byId.get(tile.id);
-          if (!mod) return null;
-          const Panel = mod.Panel;
-          const result = results.get(tile.id) ?? resultFor(mod, demo, live, settings);
-          return (
-            <div key={tile.id} className={`${styles.tile} ${sizeClass[tile.size]}`}>
-              <div className={styles.tileInner}>
-                {edit ? (
-                  <div className={styles.editBar}>
-                    <button type="button" className={styles.editBtn} onClick={() => move(tile.id, -1)} aria-label={`Move ${mod.manifest.name} earlier`}>
-                      ↑
-                    </button>
-                    <button type="button" className={styles.editBtn} onClick={() => move(tile.id, 1)} aria-label={`Move ${mod.manifest.name} later`}>
-                      ↓
-                    </button>
-                    <button type="button" className={styles.editBtn} onClick={() => resize(tile.id)} aria-label={`Resize ${mod.manifest.name}`}>
-                      {tile.size}
-                    </button>
-                    <button type="button" className={styles.editBtn} onClick={() => toggle(tile.id)} aria-label={`Hide ${mod.manifest.name}`}>
-                      ✕
-                    </button>
+                  <div className={styles.tilePanel}>
+                    <Panel result={result} demo={demo && !mod.manifest.always} refresh={() => void load(tile.id)} />
                   </div>
-                ) : null}
-                <button type="button" className={styles.fileBtn} onClick={() => setOpenFile(tile.id)} aria-label={`Open ${mod.manifest.name} file`}>
-                  FILE
-                </button>
-                <div className={styles.tilePanel}>
-                  <Panel result={result} demo={demo && !mod.manifest.always} refresh={() => void load(tile.id)} />
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </main>
+            );
+          })}
+        </main>
 
-      {showSettings ? (
-        <SettingsDialog
-          current={settings}
-          onClose={() => setShowSettings(false)}
-          onSaved={() => {
-            void loadSettings();
-            void load("weather");
-            void load("calendar");
-            void load("notes");
-          }}
-        />
-      ) : null}
+        {showSettings ? (
+          <SettingsDialog
+            current={settings}
+            onClose={() => setShowSettings(false)}
+            onSaved={() => {
+              void loadSettings();
+              void load("weather");
+              void load("calendar");
+              void load("notes");
+            }}
+          />
+        ) : null}
 
-      {fileMod && fileResult ? <CaseFile mod={fileMod} result={fileResult} demo={demo} onClose={() => setOpenFile(null)} /> : null}
+        {fileMod && fileResult ? <CaseFile mod={fileMod} result={fileResult} demo={demo} onClose={() => setOpenFile(null)} /> : null}
 
-      <aside className={styles.cost} aria-label="Usage cost">
-        {demo ? "Today $0.04 · month $1.12 (demo)" : "Cost: no data yet"}
-      </aside>
-    </div>
+        <aside className={styles.cost} aria-label={tr("Usage cost")}>
+          {demo ? tr("Today $0.04 · month $1.12 (demo)") : tr("Cost: no data yet")}
+        </aside>
+      </div>
+    </LangContext.Provider>
   );
 }

@@ -1,6 +1,8 @@
 import AddForm from "@/components/hud/AddForm";
 import Panel from "@/components/hud/Panel";
 import styles from "@/components/hud/hud.module.css";
+import { useTr } from "@/components/hud/lang";
+import type { Tr } from "@/lib/i18n";
 import type { ModuleDef, PanelProps } from "@/modules/types";
 
 export type Data = { notes: { id: string; text: string; at: string }[] };
@@ -14,20 +16,21 @@ async function remove(id: string, refresh?: () => void) {
 }
 
 function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
+  const tr = useTr();
   if (result.status !== "ok") {
     return <Panel title="Archive" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
   const data = result.data;
   return (
     <Panel title="Archive" demo={demo}>
-      {data.notes.length === 0 ? <p className={styles.sub}>No notes yet.</p> : (
+      {data.notes.length === 0 ? <p className={styles.sub}>{tr("No notes yet.")}</p> : (
         <ul className={styles.list}>
           {data.notes.map((n) => (
             <li key={n.id} className={styles.row}>
               <span className={styles.time + " mono"}>{n.at}</span>
               <span>{n.text}</span>
               {demo ? null : (
-                <button type="button" className={styles.remove} aria-label="Delete note" onClick={() => void remove(n.id, refresh)}>
+                <button type="button" className={styles.remove} aria-label={tr("Delete note")} onClick={() => void remove(n.id, refresh)}>
                   ✕
                 </button>
               )}
@@ -40,9 +43,8 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
   );
 }
 
-function toLines(data: Data): string[] {
-  const out = data.notes.length === 0 ? "The archive is empty." : data.notes.map((n) => n.at + " " + n.text);
-  return Array.isArray(out) ? out : [out];
+function toLines(data: Data, tr: Tr): string[] {
+  return data.notes.length === 0 ? [tr("The archive is empty.")] : data.notes.map((n) => n.at + " " + n.text);
 }
 
 const def: ModuleDef<Data> = {

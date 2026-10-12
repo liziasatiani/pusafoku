@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Panel from "@/components/hud/Panel";
 import styles from "@/components/hud/hud.module.css";
+import { useTr } from "@/components/hud/lang";
+import type { Tr } from "@/lib/i18n";
 import type { ModuleDef, PanelProps } from "@/modules/types";
 
 export type Data = { items: { id: string; title: string; source: string; draft: string }[] };
@@ -10,6 +12,7 @@ export type Data = { items: { id: string; title: string; source: string; draft: 
 type Item = Data["items"][number];
 
 function Entry({ item, live, refresh }: { item: Item; live: boolean; refresh?: () => void }) {
+  const tr = useTr();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.draft);
   const [busy, setBusy] = useState(false);
@@ -25,11 +28,11 @@ function Entry({ item, live, refresh }: { item: Item; live: boolean; refresh?: (
         refresh?.();
       } else {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(data.error ?? "Could not save");
+        setError(tr(data.error ?? "Could not save"));
         if (res.status === 409) refresh?.();
       }
     } catch {
-      setError("Could not reach the server");
+      setError(tr("Could not reach the server"));
     } finally {
       setBusy(false);
     }
@@ -42,7 +45,7 @@ function Entry({ item, live, refresh }: { item: Item; live: boolean; refresh?: (
         {item.title} <span className={styles.meta}>{item.source}</span>
       </p>
       {editing ? (
-        <textarea className={styles.draftBox} value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={8000} rows={4} aria-label={`Draft for ${item.title}`} />
+        <textarea className={styles.draftBox} value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={8000} rows={4} aria-label={tr("Draft for {title}", { title: item.title })} />
       ) : (
         <p className={styles.sub}>{item.draft}</p>
       )}
@@ -50,22 +53,22 @@ function Entry({ item, live, refresh }: { item: Item; live: boolean; refresh?: (
         {editing ? (
           <>
             <button type="button" className={styles.btn} disabled={locked} onClick={() => void send({ action: "edit", draft })}>
-              Save
+              {tr("Save")}
             </button>
             <button type="button" className={styles.btn} disabled={busy} onClick={() => { setEditing(false); setDraft(item.draft); }}>
-              Cancel
+              {tr("Cancel")}
             </button>
           </>
         ) : (
           <>
             <button type="button" className={styles.btn} disabled={locked} onClick={() => void send({ action: "approve" })}>
-              Approve
+              {tr("Approve")}
             </button>
             <button type="button" className={styles.btn} disabled={locked} onClick={() => setEditing(true)}>
-              Edit
+              {tr("Edit")}
             </button>
             <button type="button" className={styles.btn} disabled={locked} onClick={() => void send({ action: "reject" })}>
-              Reject
+              {tr("Reject")}
             </button>
           </>
         )}
@@ -80,6 +83,7 @@ function Entry({ item, live, refresh }: { item: Item; live: boolean; refresh?: (
 }
 
 function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
+  const tr = useTr();
   if (result.status !== "ok") {
     return <Panel title="Authorizations" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
@@ -87,7 +91,7 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
   return (
     <Panel title="Authorizations" demo={demo}>
       {data.items.length === 0 ? (
-        <p className={styles.sub}>Nothing waiting.</p>
+        <p className={styles.sub}>{tr("Nothing waiting.")}</p>
       ) : (
         <ul className={styles.list}>
           {data.items.map((i) => (
@@ -99,9 +103,9 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
   );
 }
 
-function toLines(data: Data): string[] {
-  if (data.items.length === 0) return ["Nothing waiting for authorization."];
-  return [data.items.length + " waiting for approval."].concat(data.items.map((i, n) => n + 1 + ". " + i.title + " (" + i.source + ")"), "Nothing is sent until you approve.");
+function toLines(data: Data, tr: Tr): string[] {
+  if (data.items.length === 0) return [tr("Nothing waiting for authorization.")];
+  return [tr("{n} waiting for approval.", { n: data.items.length })].concat(data.items.map((i, n) => n + 1 + ". " + i.title + " (" + i.source + ")"), tr("Nothing is sent until you approve."));
 }
 
 const def: ModuleDef<Data> = {

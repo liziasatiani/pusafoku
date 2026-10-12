@@ -46,3 +46,11 @@ a:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+html[lang="ka"] * {
+  text-transform: none !important;
+}
+
+html[lang="ka"] *:not(h1) {
+  letter-spacing: 0.03em !important;
+}
