@@ -10,6 +10,11 @@ const session = await import("../lib/session.ts");
 const commands = await import("../lib/commands.ts");
 const settings = await import("../lib/server/settings-input.ts");
 const gmail = await import("../lib/server/gmail.ts");
+const topo = await import("../lib/geo/topo.ts");
+const view = await import("../lib/geo/view.ts");
+const sun = await import("../lib/geo/sun.ts");
+const placesInput = await import("../lib/server/places-input.ts");
+const world = JSON.parse((await import("node:fs")).readFileSync(new URL("../lib/geo/countries-50m.json", import.meta.url), "utf8"));
 
 const TZ = "Asia/Tbilisi";
 const NOW = Date.parse("2026-10-13T08:00:00Z");
@@ -112,6 +117,13 @@ test("event input validation", () => {
   }
 });
 
+test("pinned places are validated and rounded", () => {
+  assert.deepEqual(placesInput.parsePlace({ name: " Batumi, Georgia ", latitude: 41.64590001, longitude: 41.6418 }), { name: "Batumi, Georgia", latitude: 41.6459, longitude: 41.6418 });
+  for (const bad of [{ name: "", latitude: 1, longitude: 1 }, { name: "a".repeat(61), latitude: 1, longitude: 1 }, { name: "A\nB", latitude: 1, longitude: 1 }, { name: "A", latitude: 91, longitude: 1 }, { name: "A", latitude: 1, longitude: -181 }, { name: "A", latitude: "1", longitude: 1 }, { name: "A", latitude: Number.NaN, longitude: 1 }, { name: 5, latitude: 1, longitude: 1 }, [], null]) {
+    assert.equal(placesInput.parsePlace(bad), null);
+  }
+});
+
 test("gmail headers become safe short labels", () => {
   assert.equal(gmail.senderName('"Nino K" <nino@example.com>'), "Nino K");
   assert.equal(gmail.senderName("Nino K <nino@example.com>"), "Nino K");
@@ -131,6 +143,69 @@ test("gmail headers become safe short labels", () => {
   assert.equal(gmail.toItem({ id: "abcdef123456" }).sender, "?");
   assert.ok(Date.parse(gmail.toItem(raw({ internalDate: "99999999999999" })).at) <= Date.now());
   assert.equal(gmail.toItem(raw({ payload: { headers: "nope" } })).sender, "?");
+});
+
+test("the world map data decodes into real countries", () => {
+  const countries = topo.decodeCountries(world);
+  assert.ok(countries.length > 150);
+  const georgia = countries.find((c) => c.name === "Georgia");
+  assert.ok(georgia, "Georgia is on the map");
+  assert.ok(georgia.west < 44.8 && georgia.east > 44.8 && georgia.south < 41.7 && georgia.north > 41.7, "Tbilisi is inside Georgia's box");
+  for (const c of countries) {
+    assert.ok(c.west >= -180 && c.east <= 180 && c.south >= -90 && c.north <= 90, c.name);
+    for (const rings of c.polygons) for (const r of rings) assert.ok(r.length >= 6 && r.length % 2 === 0, c.name);
+  }
+  const small = topo.decodeCountries({ transform: { scale: [1, 1], translate: [0, 0] }, arcs: [[[0, 0], [10, 0], [0, 10]], [[10, 10], [-10, 0], [0, -10]]], objects: { countries: { geometries: [{ type: "Polygon", arcs: [[0, 1]], properties: { name: "Box" } }, { type: "Polygon", arcs: [[-2, -1]], properties: { name: "Reversed" } }, { type: "Point" }] } } });
+  assert.equal(small.length, 2);
+  assert.deepEqual(Array.from(small[0].polygons[0][0]), [0, 0, 10, 0, 10, 10, 0, 10, 0, 0]);
+  assert.equal(small[0].east, 10);
+});
+
+test("map zoom and pan stay inside the world", () => {
+  const W = 600;
+  const H = 300;
+  assert.equal(view.baseScale(W, H), 600 / 360);
+  assert.equal(view.baseScale(300, 600), 600 / 180);
+  assert.deepEqual(Object.values(view.clampView({ lon: 500, lat: 500, k: 1 }, 300, 600)).slice(1, 2), [0]);
+  const full = view.clampView({ lon: 90, lat: 40, k: 1 }, W, H);
+  assert.deepEqual([full.lon, full.k], [0, 1]);
+  assert.equal(view.clampView({ lon: 0, lat: 0, k: 1000 }, W, H).k, view.MAX_ZOOM);
+  assert.equal(view.clampView({ lon: 0, lat: 0, k: 0.1 }, W, H).k, 1);
+  const zoomed = view.clampView({ lon: 500, lat: 500, k: 10 }, W, H);
+  const s = view.baseScale(W, H) * 10;
+  assert.ok(Math.abs(zoomed.lon - (180 - W / (2 * s))) < 1e-9);
+  assert.ok(zoomed.lat <= 90);
+  const [x, y] = view.project({ lon: 44.8, lat: 41.7, k: 8 }, W, H, 44.8, 41.7);
+  assert.deepEqual([x, y], [W / 2, H / 2]);
+  const [lon, lat] = view.unproject({ lon: 44.8, lat: 41.7, k: 8 }, W, H, W / 2 + 30, H / 2 - 20);
+  const [x2, y2] = view.project({ lon: 44.8, lat: 41.7, k: 8 }, W, H, lon, lat);
+  assert.ok(Math.abs(x2 - (W / 2 + 30)) < 1e-6 && Math.abs(y2 - (H / 2 - 20)) < 1e-6);
+  const start = { lon: 40, lat: 40, k: 4 };
+  const after = view.zoomAt(start, W, H, 100, 80, 2);
+  const [ax, ay] = view.unproject(start, W, H, 100, 80);
+  const [bx, by] = view.unproject(after, W, H, 100, 80);
+  assert.ok(Math.abs(ax - bx) < 1e-6 && Math.abs(ay - by) < 1e-6, "the point under the cursor stays put");
+  assert.equal(after.k, 8);
+  const moved = view.panBy(start, W, H, 50, 0);
+  assert.ok(moved.lon < start.lon);
+  assert.equal(view.gridStep(1), 30);
+  assert.equal(view.gridStep(60), 2);
+});
+
+test("the day and night line follows the sun", () => {
+  const june = sun.subsolar(Date.parse("2026-06-21T12:00:00Z"));
+  assert.ok(Math.abs(june.lat - 23.44) < 0.5, `June solstice latitude ${june.lat}`);
+  assert.ok(Math.abs(june.lon) < 3, `Longitude at noon UTC ${june.lon}`);
+  const december = sun.subsolar(Date.parse("2026-12-21T12:00:00Z"));
+  assert.ok(Math.abs(december.lat + 23.44) < 0.5);
+  const evening = sun.subsolar(Date.parse("2026-03-20T18:00:00Z"));
+  assert.ok(Math.abs(evening.lat) < 1.5 && Math.abs(evening.lon + 90) < 5, `18:00 UTC at the equinox ${JSON.stringify(evening)}`);
+  const polygon = sun.nightPolygon(Date.parse("2026-06-21T12:00:00Z"));
+  assert.equal(polygon[0][0], -180);
+  assert.equal(polygon.at(-1)[1], -90);
+  assert.equal(sun.nightPolygon(Date.parse("2026-12-21T12:00:00Z")).at(-1)[1], 90);
+  for (const [lon, lat] of polygon) assert.ok(lon >= -180 && lon <= 180 && lat >= -90 && lat <= 90);
+  assert.ok(sun.nightPolygon(Date.parse("2026-03-20T12:00:00Z")).every(([, lat]) => Number.isFinite(lat)));
 });
 
 test("calendar addresses", () => {

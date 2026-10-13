@@ -193,7 +193,22 @@ async function messages(): Promise<ModuleResult<unknown>> {
   return ok({ unread: box.unread, items: box.items.map((m) => ({ id: m.id, sender: m.sender, subject: m.subject, at: label(m.at) })) });
 }
 
-const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss, inbox, calendar, messages };
+type PlaceRow = { id: string; name: string; latitude: number; longitude: number };
+
+async function map(): Promise<ModuleResult<unknown>> {
+  const p = await place();
+  let pins: PlaceRow[] = [];
+  let editable = true;
+  try {
+    pins = await rest<PlaceRow[]>("places?select=id,name,latitude,longitude&order=created_at.asc&limit=100");
+  } catch (error) {
+    if (!(error instanceof DbUnavailable)) throw error;
+    editable = false;
+  }
+  return ok({ home: { name: p.city, latitude: p.latitude, longitude: p.longitude }, places: pins, editable });
+}
+
+const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss, inbox, calendar, messages, map };
 const NEEDS_DB = new Set(["tasks", "notes", "monitor", "rss", "inbox"]);
 
 export async function loadModule(id: string): Promise<ModuleResult<unknown>> {

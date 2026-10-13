@@ -662,6 +662,10 @@
   gap: 10px;
 }
 
+.pageWide {
+  grid-column: 1 / -1;
+}
+
 .pageCli {
   grid-column: 1 / -1;
   border: 1px solid var(--line);

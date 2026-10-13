@@ -84,6 +84,14 @@ create table public.audit_log (
 );
 create index audit_log_at_idx on public.audit_log (at desc);
 
+create table public.places (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(name) between 1 and 60),
+  latitude double precision not null check (latitude between -90 and 90),
+  longitude double precision not null check (longitude between -180 and 180),
+  created_at timestamptz not null default now()
+);
+
 insert into public.settings (id) values (true);
 
 create table public.events (
@@ -122,6 +130,7 @@ alter table public.usage_log enable row level security;
 alter table public.audit_log enable row level security;
 alter table public.events enable row level security;
 alter table public.calendar_sources enable row level security;
+alter table public.places enable row level security;
 
 alter table public.settings force row level security;
 alter table public.tasks force row level security;
@@ -134,6 +143,7 @@ alter table public.usage_log force row level security;
 alter table public.audit_log force row level security;
 alter table public.events force row level security;
 alter table public.calendar_sources force row level security;
+alter table public.places force row level security;
 
 revoke all on all tables in schema public from anon, authenticated;
 revoke all on all sequences in schema public from anon, authenticated;

@@ -216,7 +216,7 @@ export default function Hud() {
               const Panel = mod.Panel;
               const result = results.get(mod.manifest.id) ?? resultFor(mod, live, settings);
               return (
-                <div key={mod.manifest.id} className={styles.tile}>
+                <div key={mod.manifest.id} className={mod.manifest.wide ? `${styles.tile} ${styles.pageWide}` : styles.tile}>
                   <div className={styles.tileInner}>
                     <button type="button" className={styles.fileBtn} onClick={() => setOpenFile(mod.manifest.id)} aria-label={tr("Open {name} file", { name: tr(mod.manifest.name) })}>
                       {tr("FILE")}

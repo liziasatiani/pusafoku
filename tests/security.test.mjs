@@ -71,7 +71,8 @@ describe("logged-out visitors", () => {
 
   const PROTECTED = [
     ["GET", "/api/modules/weather"], ["GET", "/api/modules/tasks"], ["GET", "/api/modules/notes"], ["GET", "/api/modules/monitor"],
-    ["GET", "/api/modules/rss"], ["GET", "/api/modules/inbox"], ["GET", "/api/modules/calendar"], ["GET", "/api/modules/messages"],
+    ["GET", "/api/modules/rss"], ["GET", "/api/modules/inbox"], ["GET", "/api/modules/calendar"], ["GET", "/api/modules/messages"], ["GET", "/api/modules/map"],
+    ["POST", "/api/places"], ["DELETE", `/api/places/${ID}`],
     ["POST", "/api/events/shift"], ["POST", "/api/events/skip"], ["DELETE", "/api/events/skip"],
     ["POST", "/api/tasks"], ["PATCH", `/api/tasks/${ID}`], ["DELETE", `/api/tasks/${ID}`],
     ["POST", "/api/notes"], ["DELETE", `/api/notes/${ID}`],
@@ -126,7 +127,7 @@ describe("logged-in visitors", () => {
   test("the main page loads", async () => assert.equal((await call("GET", "/", { authed: true })).status, 200));
   test("writes from another site are refused", async () => {
     const forms = [
-      ["POST", "/api/tasks", { title: "x" }], ["POST", "/api/notes", { text: "x" }], ["POST", "/api/feeds", { url: "https://example.com/feed" }],
+      ["POST", "/api/tasks", { title: "x" }], ["POST", "/api/notes", { text: "x" }], ["POST", "/api/places", { name: "x", latitude: 1, longitude: 1 }], ["DELETE", `/api/places/${ID}`, undefined], ["POST", "/api/feeds", { url: "https://example.com/feed" }],
       ["POST", "/api/events", { title: "x", day: "2026-10-13" }], ["POST", "/api/events/shift", { weeks: 26 }], ["POST", "/api/events/skip", { from: "2026-10-27", to: "2026-11-05" }], ["DELETE", "/api/events/skip", undefined], ["POST", "/api/calendar/sources", { url: "https://example.com/a.ics" }],
       ["POST", "/api/monitor/sites", { url: "https://example.com" }], ["POST", "/api/monitor/check", {}], ["PATCH", `/api/approvals/${ID}`, { action: "approve" }],
       ["DELETE", `/api/tasks/${ID}`, undefined], ["PATCH", "/api/settings", { name: "x" }],
@@ -139,6 +140,8 @@ describe("logged-in visitors", () => {
   test("malformed ids and bodies are refused with the right codes", async () => {
     const same = { origin: base };
     assert.equal((await call("DELETE", "/api/tasks/not-a-uuid", { authed: true, headers: same })).status, 404);
+    assert.equal((await call("DELETE", "/api/places/not-a-uuid", { authed: true, headers: same })).status, 404);
+    assert.equal((await call("POST", "/api/places", { authed: true, headers: same, body: { name: "x", latitude: 200, longitude: 1 } })).status, 400);
     assert.equal((await call("PATCH", "/api/approvals/not-a-uuid", { authed: true, headers: same, body: { action: "approve" } })).status, 404);
     assert.equal((await call("PATCH", `/api/approvals/${ID}`, { authed: true, headers: same, body: { action: "delete" } })).status, 400);
     assert.equal((await call("POST", "/api/events", { authed: true, headers: same, body: { title: "x", day: "2026-02-30" } })).status, 400);

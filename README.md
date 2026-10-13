@@ -56,3 +56,7 @@ npm test           build, then run every check including the security checks
 - Website, feed and calendar addresses must be public https addresses. Private networks, IP addresses and unusual ports are refused, redirects are checked, and downloads are size and time limited.
 - Voice recognition runs on the device only. If the browser cannot do that, the microphone stays off. Nothing is recorded.
 - `npm test` fails if a secret reaches a browser file, a response or the repository.
+
+## Credits
+
+Country outlines on the map are Natural Earth data (public domain), packaged by `world-atlas` (ISC licence) and bundled in the app.
