@@ -25,6 +25,7 @@ const headers = [
 ];
 
 const config: NextConfig = {
+  agentRules: false,
   poweredByHeader: false,
   reactStrictMode: true,
   async headers() {

@@ -478,6 +478,14 @@
   color: var(--glow);
 }
 
+@media (pointer: coarse) {
+  .fileBtn {
+    top: 0;
+    min-height: 36px;
+    min-width: 44px;
+  }
+}
+
 .coreBar {
   --log-max: 14dvh;
   flex-direction: column;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { SUGGESTIONS } from "@/lib/i18n";
 import { useLang, useTr } from "./lang";
 import { installLocalSpeech, localeFor, localSpeech, recognizerCtor, speakLines, stopSpeaking, type LocalSpeech, type Recognizer, type VoiceLang } from "./speech";
@@ -21,6 +21,7 @@ type Entry = { id: number; kind: "in" | "out"; text: string };
 
 export default function CommandLine({ ask, onMode, compact, defaultLang = "en" }: Props) {
   const tr = useTr();
+  const inputId = useId();
   const uiLang = useLang();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [value, setValue] = useState("");
@@ -208,10 +209,10 @@ export default function CommandLine({ ask, onMode, compact, defaultLang = "en" }
         </p>
       ) : null}
       <form className={styles.prompt} onSubmit={onSubmit}>
-        <label htmlFor="cmd" className={styles.caret}>
+        <label htmlFor={inputId} className={styles.caret}>
           &gt;
         </label>
-        <input id="cmd" className={styles.input} value={value} onChange={(e) => setValue(e.target.value)} autoComplete="off" placeholder={tr("Type a command. Try: start my day")} />
+        <input id={inputId} className={styles.input} value={value} onChange={(e) => setValue(e.target.value)} autoComplete="off" placeholder={tr("Type a command. Try: start my day")} />
         <button type="submit" className={styles.send}>
           {tr("SEND")}
         </button>

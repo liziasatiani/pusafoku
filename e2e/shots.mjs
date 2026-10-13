@@ -24,8 +24,9 @@ async function session(viewport, name, scheme = "dark") {
   await page.waitForURL(`${base}/`);
   await page.waitForTimeout(5500);
   await page.screenshot({ path: `${out}/${name}-real.png`, fullPage: true });
-  await page.fill("#cmd", "start my day");
-  await page.press("#cmd", "Enter");
+  const command = page.getByPlaceholder(/^Type a command/).locator("visible=true").first();
+  await command.fill("start my day");
+  await command.press("Enter");
   await page.waitForTimeout(4500);
   await page.screenshot({ path: `${out}/${name}-answer.png`, fullPage: true });
   await page.getByRole("button", { name: /^Open .* file$/ }).first().click().catch(async () => {
