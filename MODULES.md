@@ -30,7 +30,7 @@ Your to-do list. Add a task, tick it off, delete it. Needs the database. Refresh
 Short notes with the time they were saved. Add and delete. Needs the database. Refreshes every minute.
 
 ## Network
-Websites you want watched, up to 20. Shows up or down and the response time. A page that answers with anything below 500 counts as up. Add a website by its full `https://` address, remove it with the cross, or press CHECK NOW. The scheduled check runs every 30 minutes through GitHub Actions and keeps 30 days of results. Needs the database and `CRON_SECRET`.
+Websites you want watched, up to 20. Shows up or down and the response time. A page that answers with anything below 500 counts as up. Add a website by its full `https://` address, remove it with the cross, or press CHECK NOW. The scheduled check runs every 30 minutes from an outside timer (see README.md) and keeps 30 days of results. Needs the database and `CRON_SECRET`.
 
 ## Signals
 Headlines from news feeds you add, up to 10 feeds. Reads RSS and Atom, shows the 12 newest across all feeds with their source and age, each linking to the article. Cached for 5 minutes. Needs the database.
