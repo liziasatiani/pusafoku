@@ -50,10 +50,15 @@ async function weather(): Promise<ModuleResult<unknown>> {
   });
   const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { next: { revalidate: 600 } });
   if (!res.ok) return { status: "error", message: `Weather service answered ${res.status}` };
-  const json = (await res.json()) as {
+  let json: {
     current: { temperature_2m: number; apparent_temperature: number; weather_code: number; wind_speed_10m: number };
     daily: { temperature_2m_max: number[]; temperature_2m_min: number[] };
   };
+  try {
+    json = await res.json();
+  } catch {
+    return { status: "error", message: "The weather service sent an unreadable answer. Try again in a minute." };
+  }
   return ok({
     city: p.city,
     tempC: json.current.temperature_2m,

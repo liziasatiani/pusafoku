@@ -242,6 +242,7 @@ const KA: Record<string, string> = {
   "ANYTHING ELSE: NO DATA ON FILE.": "დანარჩენზე: მონაცემი არ მოიპოვება.",
   "NO DATA ON FILE FOR THAT. TYPE HELP.": "ამაზე მონაცემი არ მოიპოვება. ჩაწერეთ: დახმარება.",
 
+  "The weather service sent an unreadable answer. Try again in a minute.": "ამინდის სერვისმა წაუკითხავი პასუხი გამოაგზავნა. სცადეთ ერთი წუთის შემდეგ.",
   "Could not save": "შენახვა ვერ მოხერხდა",
   "Could not delete": "წაშლა ვერ მოხერხდა",
   "Could not read": "წაკითხვა ვერ მოხერხდა",
