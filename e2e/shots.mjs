@@ -24,11 +24,10 @@ async function session(viewport, name, scheme = "dark") {
   await page.waitForURL(`${base}/`);
   await page.waitForTimeout(5500);
   await page.screenshot({ path: `${out}/${name}-real.png`, fullPage: true });
-  await page.getByRole("button", { name: "DEMO" }).click();
   await page.fill("#cmd", "start my day");
   await page.press("#cmd", "Enter");
   await page.waitForTimeout(4500);
-  await page.screenshot({ path: `${out}/${name}-demo.png`, fullPage: true });
+  await page.screenshot({ path: `${out}/${name}-answer.png`, fullPage: true });
   await page.getByRole("button", { name: /^Open .* file$/ }).first().click().catch(async () => {
     await page.locator("button", { hasText: /Authorizations/ }).first().click();
   });

@@ -8,17 +8,16 @@ import styles from "./casefile.module.css";
 type Props = {
   mod: AnyModule;
   result: ModuleResult<unknown>;
-  demo: boolean;
   onClose: () => void;
 };
 
-function stamp(result: ModuleResult<unknown>, demo: boolean): string {
+function stamp(result: ModuleResult<unknown>): string {
   if (result.status === "not_connected") return "NO DATA";
   if (result.status === "error") return "ERROR";
-  return demo ? "SAMPLE" : "ON FILE";
+  return "ON FILE";
 }
 
-export default function CaseFile({ mod, result, demo, onClose }: Props) {
+export default function CaseFile({ mod, result, onClose }: Props) {
   const tr = useTr();
   const closeRef = useRef<HTMLButtonElement>(null);
   const { id, name, description, env, refreshSeconds } = mod.manifest;
@@ -41,7 +40,7 @@ export default function CaseFile({ mod, result, demo, onClose }: Props) {
           <p className={styles.kind}>{tr("CASE FILE")}</p>
           <p className={styles.ref}>PSF-{id.toUpperCase()}</p>
           <span className={styles.stamp} data-tone={result.status === "ok" ? "ok" : "off"}>
-            {tr(stamp(result, demo))}
+            {tr(stamp(result))}
           </span>
           <button ref={closeRef} type="button" className={styles.close} onClick={onClose} aria-label={tr("Close file")}>
             {tr("CLOSE")}

@@ -11,7 +11,7 @@ export type Data = { items: { id: string; title: string; source: string; draft: 
 
 type Item = Data["items"][number];
 
-function Entry({ item, live, refresh }: { item: Item; live: boolean; refresh?: () => void }) {
+function Entry({ item, refresh }: { item: Item; refresh?: () => void }) {
   const tr = useTr();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.draft);
@@ -38,7 +38,6 @@ function Entry({ item, live, refresh }: { item: Item; live: boolean; refresh?: (
     }
   }
 
-  const locked = !live || busy;
   return (
     <li className={styles.inboxItem}>
       <p className={styles.itemTitle}>
@@ -52,7 +51,7 @@ function Entry({ item, live, refresh }: { item: Item; live: boolean; refresh?: (
       <div className={styles.actions}>
         {editing ? (
           <>
-            <button type="button" className={styles.btn} disabled={locked} onClick={() => void send({ action: "edit", draft })}>
+            <button type="button" className={styles.btn} disabled={busy} onClick={() => void send({ action: "edit", draft })}>
               {tr("Save")}
             </button>
             <button type="button" className={styles.btn} disabled={busy} onClick={() => { setEditing(false); setDraft(item.draft); }}>
@@ -61,13 +60,13 @@ function Entry({ item, live, refresh }: { item: Item; live: boolean; refresh?: (
           </>
         ) : (
           <>
-            <button type="button" className={styles.btn} disabled={locked} onClick={() => void send({ action: "approve" })}>
+            <button type="button" className={styles.btn} disabled={busy} onClick={() => void send({ action: "approve" })}>
               {tr("Approve")}
             </button>
-            <button type="button" className={styles.btn} disabled={locked} onClick={() => setEditing(true)}>
+            <button type="button" className={styles.btn} disabled={busy} onClick={() => setEditing(true)}>
               {tr("Edit")}
             </button>
-            <button type="button" className={styles.btn} disabled={locked} onClick={() => void send({ action: "reject" })}>
+            <button type="button" className={styles.btn} disabled={busy} onClick={() => void send({ action: "reject" })}>
               {tr("Reject")}
             </button>
           </>
@@ -82,20 +81,20 @@ function Entry({ item, live, refresh }: { item: Item; live: boolean; refresh?: (
   );
 }
 
-function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
+function ModulePanel({ result, refresh }: PanelProps<Data>) {
   const tr = useTr();
   if (result.status !== "ok") {
-    return <Panel title="Authorizations" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
+    return <Panel title="Authorizations" status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
   const data = result.data;
   return (
-    <Panel title="Authorizations" demo={demo}>
+    <Panel title="Authorizations">
       {data.items.length === 0 ? (
         <p className={styles.sub}>{tr("Nothing waiting.")}</p>
       ) : (
         <ul className={styles.list}>
           {data.items.map((i) => (
-            <Entry key={i.id} item={i} live={!demo} refresh={refresh} />
+            <Entry key={i.id} item={i} refresh={refresh} />
           ))}
         </ul>
       )}
@@ -119,7 +118,6 @@ const def: ModuleDef<Data> = {
   },
   Panel: ModulePanel,
   lines: toLines,
-  demo: () => ({ items: [{ id: "1", title: "Reply to a customer question", source: "Store", draft: "Thanks for asking. The item ships within two days." }, { id: "2", title: "Post a product update", source: "Store", draft: "New arrivals this week." }] }),
   notConnectedHint: "Connect the database to see items waiting for approval.",
 };
 

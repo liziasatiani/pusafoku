@@ -19,15 +19,15 @@ async function removeFeed(id: string, refresh?: () => void) {
   }
 }
 
-function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
+function ModulePanel({ result, refresh }: PanelProps<Data>) {
   const tr = useTr();
   if (result.status !== "ok") {
-    return <Panel title="Signals" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
+    return <Panel title="Signals" status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
   const data = result.data;
   const feeds = data.feeds ?? [];
   return (
-    <Panel title="Signals" demo={demo}>
+    <Panel title="Signals">
       {data.items.length === 0 ? (
         <p className={styles.sub}>{feeds.length === 0 ? tr("No feeds yet. Add one below.") : tr("No headlines available right now.")}</p>
       ) : (
@@ -50,7 +50,7 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
         </ul>
       )}
       {data.failed ? <p className={styles.meta}>{tr(data.failed > 1 ? "{n} feeds unreachable" : "{n} feed unreachable", { n: data.failed })}</p> : null}
-      {demo || !refresh ? null : (
+      {!refresh ? null : (
         <>
           {feeds.length > 0 ? (
             <ul className={styles.chips}>
@@ -87,7 +87,6 @@ const def: ModuleDef<Data> = {
   },
   Panel: ModulePanel,
   lines: toLines,
-  demo: () => ({ items: [{ title: "Sample headline one", source: "Feed A", ago: "12m" }, { title: "Sample headline two", source: "Feed B", ago: "41m" }, { title: "Sample headline three", source: "Feed A", ago: "2h" }] }),
   notConnectedHint: "Connect the database to add news feeds.",
 };
 

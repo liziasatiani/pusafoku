@@ -2,13 +2,12 @@
 
 A private command centre for one person. It shows your tasks, notes, websites, news, calendar and approvals on one screen, in a dark green theme or a light paper theme, and answers short commands by typing or by voice.
 
-## Five-line how-to
+## Four-line how-to
 
 1. Open the site and log in with your password.
 2. Press SETTINGS to set your name, language (English or Georgian) and city, then fill the panels: tasks in Operations, notes in Archive, websites in Network, news feeds in Signals, events or calendar addresses in Schedule.
 3. Type or tap MIC and say a command: `start my day`, `network`, `sky`, `authorizations`.
 4. Items other tools send to the inbox wait in Authorizations until you Approve, Edit or Reject them.
-5. DEMO shows sample data. Turn it off for your real data.
 
 Each panel is explained in [MODULES.md](MODULES.md).
 

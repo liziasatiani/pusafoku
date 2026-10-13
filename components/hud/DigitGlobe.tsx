@@ -2,11 +2,10 @@
 
 import { useEffect, useRef } from "react";
 
-export type CoreState = "idle" | "listening" | "thinking" | "speaking";
+export type CoreState = "idle" | "listening" | "speaking";
 
 type Props = {
   state: CoreState;
-  marker?: boolean;
   className?: string;
 };
 
@@ -15,7 +14,8 @@ type Point = { lat: number; lon: number; land: boolean; seed: number };
 
 const TAU = Math.PI * 2;
 const TILT = 0.38;
-const SPEED: Record<CoreState, number> = { idle: 1, listening: 1.6, thinking: 3.2, speaking: 1.4 };
+const FACING = 0.9;
+const SPEED: Record<CoreState, number> = { idle: 1, listening: 1.6, speaking: 1.4 };
 
 function hash3(x: number, y: number, z: number, s: number): number {
   let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(z, 1103515245) + s) | 0;
@@ -118,21 +118,14 @@ function readLook(px: number): Look {
   };
 }
 
-const SITE = { lat: 0.45, lon: 0.9 };
-
-export default function DigitGlobe({ state, marker = false, className }: Props) {
+export default function DigitGlobe({ state, className }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<CoreState>(state);
-  const markerRef = useRef(marker);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
-
-  useEffect(() => {
-    markerRef.current = marker;
-  }, [marker]);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -194,7 +187,7 @@ export default function DigitGlobe({ state, marker = false, className }: Props) 
       const dt = (now - last) / 1000;
       last = now;
       clock += dt * (reduced ? 0.15 : SPEED[stateRef.current]);
-      const rot = -SITE.lon + Math.sin(clock * 0.22) * 0.55;
+      const rot = -FACING + Math.sin(clock * 0.22) * 0.55;
       const tick = Math.floor(clock * 1.2);
       const { sprites, dark } = look;
       ctx.clearRect(0, 0, width, height);
@@ -246,22 +239,6 @@ export default function DigitGlobe({ state, marker = false, className }: Props) 
         ctx.drawImage(sprites[p.land ? (q[2] > 0.55 ? 0 : 1) : 2][bit], q[0] - size / 2, q[1] - size / 2, size, size);
       }
       ctx.globalAlpha = 1;
-
-      if (markerRef.current) {
-        const s = project(SITE.lat, SITE.lon, rot);
-        if (s[2] > 0.2) {
-          const pulse = (clock * 0.9) % 1;
-          ctx.lineWidth = 1.6;
-          ctx.strokeStyle = "rgba(192,71,46,0.95)";
-          ctx.beginPath();
-          ctx.arc(s[0], s[1], 18, 0, TAU);
-          ctx.stroke();
-          ctx.strokeStyle = `rgba(192,71,46,${0.7 * (1 - pulse)})`;
-          ctx.beginPath();
-          ctx.arc(s[0], s[1], 18 + pulse * 36, 0, TAU);
-          ctx.stroke();
-        }
-      }
     };
 
     const ro = new ResizeObserver(fit);

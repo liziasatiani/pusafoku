@@ -131,10 +131,9 @@ test("command answers stay honest", () => {
   const mod = (id, name, lines) => ({ manifest: { id, name }, notConnectedHint: "hint", lines });
   const modules = [mod("weather", "Sky", () => ["Tbilisi: 11°"]), mod("monitor", "Network", () => ["site OK"])];
   const results = new Map([["weather", { status: "ok", data: {}, fetchedAt: "" }]]);
-  assert.deepEqual(commands.answer("sky", modules, results, false), ["TBILISI: 11°"]);
-  assert.match(commands.answer("network", modules, results, false)[0], /NETWORK: NOT CONNECTED/);
-  assert.deepEqual(commands.answer("what is the meaning of life", modules, results, false), ["NO DATA ON FILE FOR THAT. TYPE HELP."]);
-  assert.ok(commands.answer("sky", modules, results, true).includes("SAMPLE DATA (DEMO IS ON)."));
+  assert.deepEqual(commands.answer("sky", modules, results), ["TBILISI: 11°"]);
+  assert.match(commands.answer("network", modules, results)[0], /NETWORK: NOT CONNECTED/);
+  assert.deepEqual(commands.answer("what is the meaning of life", modules, results), ["NO DATA ON FILE FOR THAT. TYPE HELP."]);
 });
 
 test("settings input validation", () => {

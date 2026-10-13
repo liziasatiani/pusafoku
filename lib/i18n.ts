@@ -4,7 +4,6 @@ export type Tr = (text: string, vars?: Vars) => string;
 
 const KA: Record<string, string> = {
   "__locale__": "ka-GE",
-  DEMO: "დემო",
   LAYOUT: "განლაგება",
   WALL: "კედელი",
   LINE: "ხაზი",
@@ -21,12 +20,8 @@ const KA: Record<string, string> = {
   Theme: "თემა",
   "Hidden panels": "დამალული პანელები",
   Core: "ბირთვი",
-  "Usage cost": "ხარჯი",
-  "Today $0.04 · month $1.12 (demo)": "დღეს $0.04 · თვე $1.12 (დემო)",
-  "Cost: no data yet": "ხარჯი: მონაცემი ჯერ არ არის",
   idle: "მოლოდინი",
   listening: "მოსმენა",
-  thinking: "ფიქრი",
   speaking: "საუბარი",
   "Move {name} earlier": "{name}: გადაწევა წინ",
   "Move {name} later": "{name}: გადაწევა უკან",
@@ -185,7 +180,6 @@ const KA: Record<string, string> = {
   "none needed": "არ სჭირდება",
   "NO DATA": "მონაცემი არ არის",
   ERROR: "შეცდომა",
-  SAMPLE: "ნიმუში",
   "ON FILE": "ჩანაწერშია",
   NEVER: "არასოდეს",
 
@@ -220,7 +214,6 @@ const KA: Record<string, string> = {
   "Speech is understood on this device. Audio is not sent or stored anywhere.": "მეტყველება მოწყობილობაზევე იცნობა. ხმა არსად იგზავნება და არ ინახება.",
   "The microphone is off: this browser cannot understand {lang} speech on the device, and audio is never sent to an outside service. Typing works.": "მიკროფონი გამორთულია: ეს ბრაუზერი მოწყობილობაზე ვერ ცნობს მეტყველებას ენაზე: {lang}. ხმა არასოდეს იგზავნება გარე სერვისში. ბრძანების ჩაწერა მუშაობს.",
 
-  "SAMPLE DATA (DEMO IS ON).": "ნიმუშის მონაცემებია (დემო ჩართულია).",
   "{name}: NOT CONNECTED. {hint}": "{name}: არ არის დაკავშირებული. {hint}",
   "{name}: ERROR. {message}": "{name}: შეცდომა. {message}",
   "COMMANDS: START MY DAY / AUTHORIZATIONS / NETWORK / SKY / SCHEDULE / OPERATIONS / SIGNALS / ARCHIVE": "ბრძანებები: დღის დაწყება / ავტორიზაციები / ქსელი / ცა / განრიგი / ოპერაციები / სიგნალები / არქივი",

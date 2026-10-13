@@ -23,34 +23,28 @@ async function toggle(id: string, done: boolean, refresh?: () => void) {
   }
 }
 
-function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
+function ModulePanel({ result, refresh }: PanelProps<Data>) {
   const tr = useTr();
   if (result.status !== "ok") {
-    return <Panel title="Operations" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
+    return <Panel title="Operations" status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
   const data = result.data;
   return (
-    <Panel title="Operations" demo={demo}>
+    <Panel title="Operations">
       {data.tasks.length === 0 ? <p className={styles.sub}>{tr("Nothing to do.")}</p> : (
         <ul className={styles.list}>
           {data.tasks.map((t) => (
             <li key={t.id} className={styles.row}>
-              {demo ? (
-                <span className={styles.check} data-done={t.done} aria-hidden="true" />
-              ) : (
-                <button type="button" className={styles.check} data-done={t.done} role="checkbox" aria-checked={t.done} aria-label={t.title} onClick={() => void toggle(t.id, !t.done, refresh)} />
-              )}
+              <button type="button" className={styles.check} data-done={t.done} role="checkbox" aria-checked={t.done} aria-label={t.title} onClick={() => void toggle(t.id, !t.done, refresh)} />
               <span className={t.done ? styles.done : undefined}>{t.title}</span>
-              {demo ? null : (
-                <button type="button" className={styles.remove} aria-label={tr("Delete {title}", { title: t.title })} onClick={() => void remove(t.id, refresh)}>
-                  ✕
-                </button>
-              )}
+              <button type="button" className={styles.remove} aria-label={tr("Delete {title}", { title: t.title })} onClick={() => void remove(t.id, refresh)}>
+                ✕
+              </button>
             </li>
           ))}
         </ul>
       )}
-      {demo || !refresh ? null : <AddForm endpoint="/api/tasks" field="title" placeholder="New task" label="New task" max={300} onDone={refresh} />}
+      {!refresh ? null : <AddForm endpoint="/api/tasks" field="title" placeholder="New task" label="New task" max={300} onDone={refresh} />}
     </Panel>
   );
 }
@@ -74,7 +68,6 @@ const def: ModuleDef<Data> = {
   },
   Panel: ModulePanel,
   lines: toLines,
-  demo: () => ({ tasks: [{ id: "1", title: "Reply to the courier", done: false }, { id: "2", title: "Check stock counts", done: false }, { id: "3", title: "Pay hosting", done: true }] }),
   notConnectedHint: "Connect the database to store tasks.",
 };
 

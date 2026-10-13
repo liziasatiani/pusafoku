@@ -5,7 +5,6 @@ import Panel from "@/components/hud/Panel";
 import styles from "@/components/hud/hud.module.css";
 import { useLang, useTr } from "@/components/hud/lang";
 import { localeFor, type Tr } from "@/lib/i18n";
-import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import type { ModuleDef } from "@/modules/types";
 
 export type Data = { timeZone: string; name: string };
@@ -61,7 +60,6 @@ const def: ModuleDef<Data> = {
       </Panel>
     ) : null,
   lines: toLines,
-  demo: () => ({ timeZone: DEFAULT_SETTINGS.timeZone, name: DEFAULT_SETTINGS.name }),
   notConnectedHint: "",
 };
 

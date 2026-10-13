@@ -1,6 +1,6 @@
 # Panels
 
-Each panel is one module in `modules/`. A panel shows "not connected" until its data source is set up, and DEMO fills it with sample data. Every panel has a FILE button that opens its case file: what it is, when it last updated, how often it refreshes and which settings it needs.
+Each panel is one module in `modules/`. A panel shows "not connected" until its data source is set up,. Every panel has a FILE button that opens its case file: what it is, when it last updated, how often it refreshes and which settings it needs.
 
 ## Settings
 The SETTINGS button opens a form for your name, language (English or Georgian), currency and city. Choosing Georgian switches the whole screen: buttons, panel names, messages, the case files, the command answers and the date, and it also accepts Georgian commands such as `დღის დაწყება`, `ქსელი` and `ცა`. The login screen stays in English because the language is only known after you log in. Type a city, press FIND and pick the match: its coordinates and time zone are filled in for you, using Open-Meteo's place search. Saving updates the Clock greeting, the Sky weather, the time zone of Schedule and Archive times, and the default voice language. Messages that include a number limit (for example a maximum of 10 feeds) stay in English. Needs the database to save; without it the defaults are shown.
@@ -48,4 +48,4 @@ You press Approve, Edit or Reject. Approving only marks the item approved and re
 Under the globe. Commands: `start my day`, `authorizations`, `network`, `sky`, `schedule`, `operations`, `signals`, `archive`, `help`. Answers come only from your own panels; anything else gets "NO DATA ON FILE". MIC listens for one phrase after a tap, only when the browser can understand speech on the device. SPEAK REPLIES reads answers with a voice installed on the device. EN and KA choose the language.
 
 ## Adding a panel
-Create `modules/<name>/index.tsx` exporting a module definition (manifest, Panel, demo data, `lines` for the command line), add it to `modules/registry.ts`, and add a loader to `lib/server/modules.ts` if it needs server data.
+Create `modules/<name>/index.tsx` exporting a module definition (manifest, Panel, `lines` for the command line), add it to `modules/registry.ts`, and add a loader to `lib/server/modules.ts` if it needs server data.

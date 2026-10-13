@@ -20,14 +20,12 @@ export type ModuleManifest = {
 
 export type PanelProps<T> = {
   result: ModuleResult<T>;
-  demo?: boolean;
   refresh?: () => void;
 };
 
 export type ModuleDef<T> = {
   manifest: ModuleManifest;
   Panel: ComponentType<PanelProps<T>>;
-  demo: () => T;
   lines: (data: T, tr: Tr) => string[];
   notConnectedHint: string;
 };
@@ -35,7 +33,6 @@ export type ModuleDef<T> = {
 export type AnyModule = {
   manifest: ModuleManifest;
   Panel: ComponentType<PanelProps<unknown>>;
-  demo: () => unknown;
   lines: (data: unknown, tr: Tr) => string[];
   notConnectedHint: string;
 };

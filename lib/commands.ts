@@ -33,7 +33,7 @@ function write(lang: Lang) {
   return { tr, shout };
 }
 
-export function answer(input: string, modules: AnyModule[], results: Results, demo: boolean, lang: Lang = "en"): string[] {
+export function answer(input: string, modules: AnyModule[], results: Results, lang: Lang = "en"): string[] {
   const { tr, shout } = write(lang);
   const text = input.trim().toLowerCase();
   const byId = new Map(modules.map((m) => [m.manifest.id, m]));
@@ -46,19 +46,18 @@ export function answer(input: string, modules: AnyModule[], results: Results, de
     return mod.lines(result.data, tr).map(shout);
   };
 
-  const tag = demo ? [shout(tr("SAMPLE DATA (DEMO IS ON)."))] : [];
   if (DAY.test(text)) {
     const out = [shout(tr(greetingKey()) + ".")];
     for (const id of ["calendar", "weather", "tasks", "inbox", "monitor", "rss"]) {
       const mod = byId.get(id);
       if (mod) out.push(...linesFor(mod));
     }
-    return out.concat(tag);
+    return out;
   }
   if (HELP.test(text)) return [tr("COMMANDS: START MY DAY / AUTHORIZATIONS / NETWORK / SKY / SCHEDULE / OPERATIONS / SIGNALS / ARCHIVE"), tr("ANYTHING ELSE: NO DATA ON FILE.")];
   for (const route of ROUTES) {
     const mod = byId.get(route.id);
-    if (mod && route.words.test(text)) return linesFor(mod).concat(tag);
+    if (mod && route.words.test(text)) return linesFor(mod);
   }
   return [tr("NO DATA ON FILE FOR THAT. TYPE HELP.")];
 }

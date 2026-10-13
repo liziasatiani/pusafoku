@@ -15,7 +15,6 @@ import { MODULES } from "@/modules/registry";
 import type { AnyModule, ModuleResult } from "@/modules/types";
 import styles from "./hud.module.css";
 
-const STATES: CoreState[] = ["idle", "listening", "thinking", "speaking"];
 const THEME_KEY = "pusafoku.theme";
 const INTRO_KEY = "pusafoku.intro";
 const VIEW_KEY = "pusafoku.view";
@@ -25,12 +24,9 @@ type Theme = "system" | "dark" | "light";
 
 const FALLBACK_SETTINGS: LiveSettings = { ...DEFAULT_SETTINGS, latitude: 41.7151, longitude: 44.8271, editable: false };
 
-function resultFor(mod: AnyModule, demo: boolean, live: Record<string, ModuleResult<unknown>>, settings: LiveSettings): ModuleResult<unknown> {
+function resultFor(mod: AnyModule, live: Record<string, ModuleResult<unknown>>, settings: LiveSettings): ModuleResult<unknown> {
   if (mod.manifest.id === "clock") {
     return { status: "ok", data: { timeZone: settings.timeZone, name: settings.name }, fetchedAt: new Date().toISOString() };
-  }
-  if (demo || mod.manifest.always) {
-    return { status: "ok", data: mod.demo(), fetchedAt: new Date().toISOString() };
   }
   return live[mod.manifest.id] ?? { status: "not_connected", hint: "Loading" };
 }
@@ -44,7 +40,6 @@ function applyTheme(theme: Theme) {
 export default function Hud() {
   const defaults = useMemo<TileLayout[]>(() => MODULES.map((m) => ({ id: m.manifest.id, hidden: false, size: m.manifest.size })), []);
   const { layout, move, resize, toggle, reset } = useLayout(defaults);
-  const [demo, setDemo] = useState(false);
   const [edit, setEdit] = useState(false);
   const [kiosk, setKiosk] = useState(false);
   const [theme, setTheme] = useState<Theme>("system");
@@ -173,21 +168,20 @@ export default function Hud() {
   }, [loadSettings]);
 
   useEffect(() => {
-    if (demo) return;
     const timers = MODULES.filter((m) => !m.manifest.always).map((m) => {
       void load(m.manifest.id);
       return window.setInterval(() => void load(m.manifest.id), Math.max(30, m.manifest.refreshSeconds) * 1000);
     });
     return () => timers.forEach((t) => window.clearInterval(t));
-  }, [demo, load]);
+  }, [load]);
 
   const byId = new Map(MODULES.map((m) => [m.manifest.id, m]));
-  const results = useMemo<Results>(() => new Map(MODULES.map((m) => [m.manifest.id, resultFor(m, demo, live, settings)])), [demo, live, settings]);
+  const results = useMemo<Results>(() => new Map(MODULES.map((m) => [m.manifest.id, resultFor(m, live, settings)])), [live, settings]);
   const fileMod = openFile ? byId.get(openFile) : undefined;
   const fileResult = openFile ? results.get(openFile) : undefined;
   const lang = settings.language;
   const tr = (text: string, vars?: Vars) => translate(lang, text, vars);
-  const ask = (input: string) => answer(input, MODULES, results, demo, lang);
+  const ask = (input: string) => answer(input, MODULES, results, lang);
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -204,9 +198,6 @@ export default function Hud() {
         <header className={styles.bar}>
           <h1 className={styles.brand}>PUSAFOKU</h1>
           <div className={styles.controls}>
-            <button type="button" className={styles.chip} aria-pressed={demo} onClick={() => setDemo((v) => !v)}>
-              {tr("DEMO")}
-            </button>
             <button type="button" className={styles.chip} aria-pressed={edit} onClick={() => setEdit((v) => !v)}>
               {tr("LAYOUT")}
             </button>
@@ -243,7 +234,7 @@ export default function Hud() {
 
         {view === "line" ? (
           <main className={styles.lineView}>
-            <DigitGlobe state={coreState} marker={demo} className={styles.lineGlobe} />
+            <DigitGlobe state={coreState} className={styles.lineGlobe} />
             <ul className={styles.status}>
               {STATUS_IDS.map((id) => {
                 const mod = byId.get(id);
@@ -269,19 +260,10 @@ export default function Hud() {
           <section className={styles.coreTile} aria-label={tr("Core")}>
             <span className={styles.stateTag} role="status" aria-live="polite">{tr(coreState)}</span>
             <div className={styles.coreStage}>
-              <DigitGlobe state={coreState} marker={demo} />
+              <DigitGlobe state={coreState} />
             </div>
             <div className={styles.coreBar}>
               <CommandLine ask={ask} onMode={onMode} defaultLang={settings.language} compact />
-              {demo ? (
-                <div className={styles.stateRow}>
-                  {STATES.map((st) => (
-                    <button key={st} type="button" className={styles.chip} aria-pressed={coreState === st} onClick={() => setCoreState(st)}>
-                      {tr(st)}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
             </div>
           </section>
 
@@ -289,7 +271,7 @@ export default function Hud() {
             const mod = byId.get(tile.id);
             if (!mod) return null;
             const Panel = mod.Panel;
-            const result = results.get(tile.id) ?? resultFor(mod, demo, live, settings);
+            const result = results.get(tile.id) ?? resultFor(mod, live, settings);
             return (
               <div key={tile.id} className={`${styles.tile} ${sizeClass[tile.size]}`}>
                 <div className={styles.tileInner}>
@@ -313,7 +295,7 @@ export default function Hud() {
                     {tr("FILE")}
                   </button>
                   <div className={styles.tilePanel}>
-                    <Panel result={result} demo={demo && !mod.manifest.always} refresh={() => void load(tile.id)} />
+                    <Panel result={result} refresh={() => void load(tile.id)} />
                   </div>
                 </div>
               </div>
@@ -334,11 +316,7 @@ export default function Hud() {
           />
         ) : null}
 
-        {fileMod && fileResult ? <CaseFile mod={fileMod} result={fileResult} demo={demo} onClose={() => setOpenFile(null)} /> : null}
-
-        <aside className={styles.cost} aria-label={tr("Usage cost")}>
-          {demo ? tr("Today $0.04 · month $1.12 (demo)") : tr("Cost: no data yet")}
-        </aside>
+        {fileMod && fileResult ? <CaseFile mod={fileMod} result={fileResult} onClose={() => setOpenFile(null)} /> : null}
       </div>
     </LangContext.Provider>
   );

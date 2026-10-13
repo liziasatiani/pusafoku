@@ -162,16 +162,6 @@
   color: var(--muted);
 }
 
-.demoTag {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  padding: 1px 6px;
-  border: 1px solid var(--warn);
-  color: var(--warn);
-  border-radius: 2px;
-}
-
 .dot {
   width: 8px;
   height: 8px;
@@ -335,17 +325,6 @@
   cursor: pointer;
 }
 
-.cost {
-  align-self: flex-end;
-  padding: 6px 10px;
-  background: var(--panel-solid);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--muted);
-}
-
 .editBar {
   display: flex;
   gap: 4px;
@@ -365,10 +344,6 @@
 }
 
 .kiosk .bar {
-  display: none;
-}
-
-.kiosk .cost {
   display: none;
 }
 
@@ -398,13 +373,7 @@
     padding-inline: 20px;
   }
 
-  .cost {
-    position: fixed;
-    right: calc(12px + env(safe-area-inset-right, 0px));
-    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .grid {
+    .grid {
     grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 12px;
   }
@@ -507,12 +476,6 @@
 
 .fileBtn:hover {
   color: var(--glow);
-}
-
-.stateRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
 }
 
 .coreBar {

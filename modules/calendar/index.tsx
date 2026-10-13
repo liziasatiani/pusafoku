@@ -27,17 +27,17 @@ const HELP = "Google: Settings, your calendar, Integrate calendar, Secret addres
 
 const REPEAT_LABEL: Record<string, string> = { none: "", daily: "every day", weekly: "every week", monthly: "every month", yearly: "every year" };
 
-function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
+function ModulePanel({ result, refresh }: PanelProps<Data>) {
   const tr = useTr();
   if (result.status !== "ok") {
-    return <Panel title="Schedule" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
+    return <Panel title="Schedule" status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
   const data = result.data;
   const mine = data.mine ?? [];
   const sources = data.sources ?? [];
-  const manage = !demo && !!refresh && data.editable !== false;
+  const manage = !!refresh && data.editable !== false;
   return (
-    <Panel title="Schedule" demo={demo}>
+    <Panel title="Schedule">
       {data.events.length === 0 ? (
         <p className={styles.sub}>{tr("No events today.")}</p>
       ) : (
@@ -115,7 +115,6 @@ const def: ModuleDef<Data> = {
   },
   Panel: ModulePanel,
   lines: toLines,
-  demo: () => ({ events: [{ time: "10:00", title: "Supplier call" }, { time: "13:30", title: "Lunch" }, { time: "17:00", title: "Review week" }] }),
   notConnectedHint: "Connect the database to keep your own calendar.",
 };
 

@@ -6,14 +6,14 @@ import type { ModuleDef, PanelProps } from "@/modules/types";
 
 export type Data = { city: string; tempC: number; feelsC: number; condition: string; highC: number; lowC: number; windKmh: number };
 
-function ModulePanel({ result, demo }: PanelProps<Data>) {
+function ModulePanel({ result }: PanelProps<Data>) {
   const tr = useTr();
   if (result.status !== "ok") {
-    return <Panel title="Sky" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
+    return <Panel title="Sky" status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
   const data = result.data;
   return (
-    <Panel title="Sky" demo={demo}>
+    <Panel title="Sky">
       <p className={styles.big + " mono"}>{Math.round(data.tempC)}°</p>
       <p className={styles.sub}>{data.city} · {tr(data.condition)}</p>
       <p className={styles.meta + " mono"}>{tr("feels {feels}° · H {high}° L {low}° · {wind} km/h", { feels: Math.round(data.feelsC), high: Math.round(data.highC), low: Math.round(data.lowC), wind: Math.round(data.windKmh) })}</p>
@@ -36,7 +36,6 @@ const def: ModuleDef<Data> = {
   },
   Panel: ModulePanel,
   lines: toLines,
-  demo: () => ({ city: "Tbilisi", tempC: 21, feelsC: 20, condition: "Clear", highC: 24, lowC: 12, windKmh: 9 }),
   notConnectedHint: "Set a city in Settings to show the weather.",
 };
 

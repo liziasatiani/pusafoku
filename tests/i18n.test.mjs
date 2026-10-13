@@ -94,7 +94,7 @@ test("georgian command answers use Georgian words and no capital forms", () => {
   const mod = (id, name, lines) => ({ manifest: { id, name }, notConnectedHint: "Connect the database to monitor websites.", lines });
   const modules = [mod("weather", "Sky", (_d, tr) => [tr("No new signals.")]), mod("monitor", "Network", () => []), mod("inbox", "Authorizations", () => ["x"])];
   const results = new Map([["weather", { status: "ok", data: {}, fetchedAt: "" }]]);
-  const out = (q) => commands.answer(q, modules, results, false, "ka");
+  const out = (q) => commands.answer(q, modules, results, "ka");
   assert.deepEqual(out("ცა"), ["ახალი სიგნალები არ არის."]);
   assert.match(out("ქსელი")[0], /^ქსელი: არ არის დაკავშირებული\./);
   assert.deepEqual(out("რაღაც უცნობი"), ["ამაზე მონაცემი არ მოიპოვება. ჩაწერეთ: დახმარება."]);
@@ -104,11 +104,11 @@ test("georgian command answers use Georgian words and no capital forms", () => {
     for (const line of out(q)) assert.ok(!/[Ა-Ჿ]/.test(line), `no Mtavruli in: ${line}`);
   }
   for (const word of i18n.SUGGESTIONS.ka) assert.ok(!/^NO DATA/.test(out(word)[0]), `suggestion "${word}" must be understood`);
-  for (const word of i18n.SUGGESTIONS.en) assert.ok(!/^NO DATA/.test(commands.answer(word, modules, results, false, "en")[0]), `suggestion "${word}" must be understood`);
+  for (const word of i18n.SUGGESTIONS.en) assert.ok(!/^NO DATA/.test(commands.answer(word, modules, results, "en")[0]), `suggestion "${word}" must be understood`);
 });
 
 test("english answers are unchanged", () => {
   const modules = [{ manifest: { id: "weather", name: "Sky" }, notConnectedHint: "h", lines: () => ["Tbilisi: 11°"] }];
   const results = new Map([["weather", { status: "ok", data: {}, fetchedAt: "" }]]);
-  assert.deepEqual(commands.answer("sky", modules, results, false, "en"), ["TBILISI: 11°"]);
+  assert.deepEqual(commands.answer("sky", modules, results, "en"), ["TBILISI: 11°"]);
 });

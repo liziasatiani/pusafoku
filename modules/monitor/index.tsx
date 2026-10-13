@@ -15,14 +15,14 @@ async function call(url: string, method: string, refresh?: () => void) {
   }
 }
 
-function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
+function ModulePanel({ result, refresh }: PanelProps<Data>) {
   const tr = useTr();
   if (result.status !== "ok") {
-    return <Panel title="Network" demo={demo} status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
+    return <Panel title="Network" status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
   const data = result.data;
   return (
-    <Panel title="Network" demo={demo}>
+    <Panel title="Network">
       {data.sites.length === 0 ? <p className={styles.sub}>{tr("No websites yet. Add one below.")}</p> : (
         <ul className={styles.list}>
           {data.sites.map((s) => (
@@ -30,7 +30,7 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
               <span className={styles.dot + " " + (s.ok === null ? styles.dotOff : s.ok ? styles.dotOk : styles.dotBad)} aria-hidden="true" />
               <span className="mono">{s.url}</span>
               <span className={styles.meta + " mono"}>{s.ok === null ? tr("pending") : s.ok ? tr("{ms} ms", { ms: s.ms }) : tr("down")}</span>
-              {!demo && s.id ? (
+              {s.id ? (
                 <button type="button" className={styles.remove} aria-label={tr("Remove {name}", { name: s.url })} onClick={() => void call(`/api/monitor/sites/${s.id}`, "DELETE", refresh)}>
                   ✕
                 </button>
@@ -39,7 +39,7 @@ function ModulePanel({ result, demo, refresh }: PanelProps<Data>) {
           ))}
         </ul>
       )}
-      {demo || !refresh ? null : (
+      {!refresh ? null : (
         <>
           <AddForm endpoint="/api/monitor/sites" field="url" placeholder="https://example.com" label="Website address" max={500} onDone={refresh} />
           <button type="button" className={styles.btn} onClick={() => void call("/api/monitor/check", "POST", refresh)}>
@@ -69,7 +69,6 @@ const def: ModuleDef<Data> = {
   },
   Panel: ModulePanel,
   lines: toLines,
-  demo: () => ({ sites: [{ url: "example.com", ok: true, ms: 182 }, { url: "example.org", ok: true, ms: 244 }, { url: "example.net", ok: false, ms: 0 }] }),
   notConnectedHint: "Connect the database to monitor websites.",
 };
 

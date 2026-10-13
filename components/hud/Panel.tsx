@@ -4,20 +4,18 @@ import styles from "./hud.module.css";
 
 type Props = {
   title: string;
-  demo?: boolean;
   status?: "ok" | "not_connected" | "error";
   hint?: string;
   message?: string;
   children?: ReactNode;
 };
 
-export default function Panel({ title, demo, status = "ok", hint, message, children }: Props) {
+export default function Panel({ title, status = "ok", hint, message, children }: Props) {
   const tr = useTr();
   return (
     <section className={styles.panel} aria-label={tr(title)}>
       <header className={styles.panelHead}>
         <h2 className={styles.panelTitle}>{tr(title)}</h2>
-        {demo ? <span className={styles.demoTag}>{tr("DEMO")}</span> : null}
         <span className={`${styles.dot} ${status === "ok" ? styles.dotOk : status === "error" ? styles.dotBad : styles.dotOff}`} aria-hidden="true" />
       </header>
       <div className={styles.panelBody}>
