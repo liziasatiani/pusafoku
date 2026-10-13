@@ -23,6 +23,24 @@ export function parseShift(body: unknown): number | null {
   return typeof weeks === "number" && Number.isInteger(weeks) && weeks >= 1 && weeks <= MAX_SHIFT_WEEKS ? weeks : null;
 }
 
+export const MAX_BREAK_DAYS = 62;
+export const MAX_SKIPPED = 120;
+
+export type ClassBreak = { from: string; to: string; days: string[] };
+
+export function parseBreak(body: unknown): ClassBreak | null {
+  if (typeof body !== "object" || body === null) return null;
+  const { from, to } = body as Record<string, unknown>;
+  if (typeof from !== "string" || typeof to !== "string" || !validDay(from) || !validDay(to) || to < from) return null;
+  const length = (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86400000 + 1;
+  if (length > MAX_BREAK_DAYS) return null;
+  return { from, to, days: Array.from({ length }, (_, i) => new Date(Date.parse(`${from}T00:00:00Z`) + i * 86400000).toISOString().slice(0, 10)) };
+}
+
+export function mergeSkipped(existing: string[], added: string[]): string[] {
+  return Array.from(new Set([...existing, ...added])).sort().slice(0, MAX_SKIPPED);
+}
+
 function validDay(day: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return false;
   const date = new Date(`${day}T00:00:00Z`);

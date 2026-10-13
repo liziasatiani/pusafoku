@@ -1,5 +1,6 @@
 import AddForm from "@/components/hud/AddForm";
 import EventForm from "@/components/hud/EventForm";
+import ClassBreaks from "@/components/hud/ClassBreaks";
 import TermShift from "@/components/hud/TermShift";
 import Panel from "@/components/hud/Panel";
 import styles from "@/components/hud/hud.module.css";
@@ -10,7 +11,7 @@ import type { ModuleDef, PanelProps } from "@/modules/types";
 
 export type Data = {
   events: { time: string; title: string; place?: string }[];
-  mine?: { id: string; title: string; day: string; start: string | null; repeat: string; place?: string; until?: string | null }[];
+  mine?: { id: string; title: string; day: string; start: string | null; repeat: string; place?: string; until?: string | null; hidden?: number }[];
   sources?: { id: string; label: string }[];
   failed?: number;
   editable?: boolean;
@@ -71,7 +72,7 @@ function ModulePanel({ result, refresh }: PanelProps<Data>) {
                   <li key={m.id} className={styles.row}>
                     <span className={styles.time + " mono"}>{m.day.slice(5)}</span>
                     <span>
-                      {m.title} <span className={styles.meta}>{[m.start, m.place, REPEAT_LABEL[m.repeat] ? tr(REPEAT_LABEL[m.repeat]) : "", m.until ? tr("until {date}", { date: m.until.slice(5) }) : ""].filter(Boolean).join(" · ")}</span>
+                      {m.title} <span className={styles.meta}>{[m.start, m.place, REPEAT_LABEL[m.repeat] ? tr(REPEAT_LABEL[m.repeat]) : "", m.until ? tr("until {date}", { date: m.until.slice(5) }) : "", m.hidden ? tr("{n} days hidden", { n: m.hidden }) : ""].filter(Boolean).join(" · ")}</span>
                     </span>
                     <button type="button" className={styles.remove} aria-label={tr("Delete {title}", { title: m.title })} onClick={() => void call(`/api/events/${m.id}`, "DELETE", refresh)}>
                       ✕
@@ -80,6 +81,10 @@ function ModulePanel({ result, refresh }: PanelProps<Data>) {
                 ))}
               </ul>
             )}
+          </details>
+          <details className={more.group}>
+            <summary className={more.summary}>{tr("Hide classes on certain days")}</summary>
+            <ClassBreaks onDone={refresh} />
           </details>
           <details className={more.group}>
             <summary className={more.summary}>{tr("Move classes to the next term")}</summary>

@@ -71,7 +71,7 @@ describe("logged-out visitors", () => {
   const PROTECTED = [
     ["GET", "/api/modules/weather"], ["GET", "/api/modules/tasks"], ["GET", "/api/modules/notes"], ["GET", "/api/modules/monitor"],
     ["GET", "/api/modules/rss"], ["GET", "/api/modules/inbox"], ["GET", "/api/modules/calendar"], ["GET", "/api/modules/messages"],
-    ["POST", "/api/messages/read"], ["DELETE", `/api/messages/${ID}`], ["POST", "/api/events/shift"],
+    ["POST", "/api/messages/read"], ["DELETE", `/api/messages/${ID}`], ["POST", "/api/events/shift"], ["POST", "/api/events/skip"], ["DELETE", "/api/events/skip"],
     ["POST", "/api/tasks"], ["PATCH", `/api/tasks/${ID}`], ["DELETE", `/api/tasks/${ID}`],
     ["POST", "/api/notes"], ["DELETE", `/api/notes/${ID}`],
     ["POST", "/api/feeds"], ["DELETE", `/api/feeds/${ID}`],
@@ -137,7 +137,7 @@ describe("logged-in visitors", () => {
   test("writes from another site are refused", async () => {
     const forms = [
       ["POST", "/api/tasks", { title: "x" }], ["POST", "/api/notes", { text: "x" }], ["POST", "/api/feeds", { url: "https://example.com/feed" }],
-      ["POST", "/api/events", { title: "x", day: "2026-10-13" }], ["POST", "/api/events/shift", { weeks: 26 }], ["POST", "/api/messages/read", {}], ["DELETE", `/api/messages/${ID}`, undefined], ["POST", "/api/calendar/sources", { url: "https://example.com/a.ics" }],
+      ["POST", "/api/events", { title: "x", day: "2026-10-13" }], ["POST", "/api/events/shift", { weeks: 26 }], ["POST", "/api/events/skip", { from: "2026-10-27", to: "2026-11-05" }], ["DELETE", "/api/events/skip", undefined], ["POST", "/api/messages/read", {}], ["DELETE", `/api/messages/${ID}`, undefined], ["POST", "/api/calendar/sources", { url: "https://example.com/a.ics" }],
       ["POST", "/api/monitor/sites", { url: "https://example.com" }], ["POST", "/api/monitor/check", {}], ["PATCH", `/api/approvals/${ID}`, { action: "approve" }],
       ["DELETE", `/api/tasks/${ID}`, undefined], ["PATCH", "/api/settings", { name: "x" }],
     ];

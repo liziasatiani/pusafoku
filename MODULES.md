@@ -14,7 +14,8 @@ Current weather for the city in your Settings (Tbilisi by default) from Open-Met
 ## Schedule
 Today's events in your time zone, earliest first, all-day events at the top.
 - **Your own events:** Add an event with a title, a date, optional start and end times, an optional room and an optional repeat (every day, week, month or year). A repeating event can have a Repeats until date, so a class stops at the end of the term. Delete from My events.
-- **Timetable:** add each class once as a weekly event with its room and the last day of the term. When the next term starts, open Move classes to the next term and enter the number of weeks to move forward (26 by default). Every weekly class with an end date moves by that many whole weeks, so weekdays stay the same.
+- **Timetable:** add each class once as a weekly event with its room and the last day of the term. When the next term starts, open Move classes to the next term and enter the number of weeks to move forward (26 by default). Every weekly class with an end date moves by that many whole weeks, so weekdays stay the same, and its hidden days move with it.
+- **Hide classes on certain days:** pick a first and last day (up to 62 days) and every weekly class with an end date is hidden on those days, for example during midterms or a holiday. One-off events such as exams are not affected. SHOW ALL CLASSES brings them back.
 - **Connected calendars:** paste the address from Google, Apple, Outlook or any calendar app, up to 5. `webcal://` addresses work. Addresses are stored privately and never sent back to the browser.
 - Handles time zones, events past midnight, repeats with counts, end dates and skipped dates, and leaves out cancelled events. A single moved occurrence of a repeating event still shows at its original time.
 - Needs the database. Refreshes every 10 minutes; connected calendars are cached for 5.

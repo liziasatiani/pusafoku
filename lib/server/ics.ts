@@ -180,7 +180,7 @@ export function eventsForDay(text: string, now: number, tz: string): DayEvent[] 
   return out.sort((a, b) => a.sort - b.sort).slice(0, 20);
 }
 
-export type OwnEvent = { title: string; day: string; start_time: string | null; end_time: string | null; repeat: string; place?: string; until?: string | null };
+export type OwnEvent = { title: string; day: string; start_time: string | null; end_time: string | null; repeat: string; place?: string; until?: string | null; skip?: string[] };
 
 function icsText(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/[\r\n]+/g, " ");
@@ -200,6 +200,12 @@ export function ownEventsToIcs(rows: OwnEvent[], tz: string): string {
       lines.push(`DTSTART;VALUE=DATE:${date}`, `DTEND;VALUE=DATE:${next}`);
     }
     if (r.repeat !== "none") lines.push(`RRULE:FREQ=${r.repeat.toUpperCase()}${r.until ? `;UNTIL=${r.until.replace(/-/g, "")}` : ""}`);
+    if (r.repeat !== "none" && r.skip && r.skip.length > 0) {
+      for (const skipped of r.skip) {
+        const d = skipped.replace(/-/g, "");
+        lines.push(r.start_time ? `EXDATE;TZID=${tz}:${d}T${r.start_time.slice(0, 2)}${r.start_time.slice(3, 5)}00` : `EXDATE;VALUE=DATE:${d}`);
+      }
+    }
     lines.push("END:VEVENT");
     return lines.join("\r\n");
   });

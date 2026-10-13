@@ -105,6 +105,7 @@ create table public.events (
   repeat text not null default 'none' check (repeat in ('none','daily','weekly','monthly','yearly')),
   place text not null default '' check (char_length(place) <= 80),
   until date,
+  skip date[] not null default '{}' check (cardinality(skip) <= 120),
   created_at timestamptz not null default now(),
   check (end_time is null or start_time is not null),
   check (end_time is null or end_time > start_time),

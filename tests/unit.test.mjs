@@ -79,6 +79,21 @@ test("classes repeat only until their end date and keep the room", () => {
   assert.equal(place(""), "");
 });
 
+test("classes can be hidden on chosen days", () => {
+  const row = (extra) => ({ title: "T", day: "2026-09-01", start_time: "10:30:00", end_time: null, repeat: "weekly", until: "2026-12-28", ...extra });
+  assert.equal(own([row({ skip: ["2026-10-13"] })]), "");
+  assert.equal(own([row({ skip: ["2026-10-12", "2026-10-14"] })]), "10:30 T");
+  assert.equal(own([row({ skip: [] })]), "10:30 T");
+  assert.equal(own([row({ start_time: null, skip: ["2026-10-13"] })]), "");
+  assert.equal(own([row({ repeat: "none", day: "2026-10-13", until: null, skip: ["2026-10-13"] })]), "10:30 T");
+  assert.deepEqual(calendarInput.parseBreak({ from: "2026-10-27", to: "2026-10-29" }), { from: "2026-10-27", to: "2026-10-29", days: ["2026-10-27", "2026-10-28", "2026-10-29"] });
+  assert.equal(calendarInput.parseBreak({ from: "2026-10-27", to: "2026-10-27" }).days.length, 1);
+  assert.equal(calendarInput.parseBreak({ from: "2026-12-30", to: "2027-01-02" }).days.length, 4);
+  for (const bad of [{ from: "2026-10-29", to: "2026-10-27" }, { from: "2026-01-01", to: "2026-12-31" }, { from: "2026-02-30", to: "2026-03-01" }, { from: "x", to: "y" }, { from: 1, to: 2 }, {}, null, "x"]) assert.equal(calendarInput.parseBreak(bad), null);
+  assert.deepEqual(calendarInput.mergeSkipped(["2026-10-28", "2026-10-27"], ["2026-10-27", "2026-10-29"]), ["2026-10-27", "2026-10-28", "2026-10-29"]);
+  assert.equal(calendarInput.mergeSkipped([], Array.from({ length: 200 }, (_, i) => new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10))).length, 120);
+});
+
 test("moving classes to the next term", () => {
   assert.equal(calendarInput.shiftDay("2026-10-13", 26), "2027-04-13");
   assert.equal(new Date(`${calendarInput.shiftDay("2026-10-13", 26)}T00:00:00Z`).getUTCDay(), new Date("2026-10-13T00:00:00Z").getUTCDay());

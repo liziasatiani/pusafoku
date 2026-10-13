@@ -2,7 +2,7 @@ import { apiGuard } from "@/lib/auth";
 import { parseShift, shiftDay } from "@/lib/server/calendar-input";
 import { DbUnavailable, rest } from "@/lib/server/db";
 
-type Row = { id: string; day: string; until: string };
+type Row = { id: string; day: string; until: string; skip: string[] };
 
 export async function POST(request: Request) {
   const denied = await apiGuard(request);
@@ -15,9 +15,9 @@ export async function POST(request: Request) {
   }
   if (weeks === null) return Response.json({ error: "Use a whole number of weeks from 1 to 60" }, { status: 400 });
   try {
-    const rows = await rest<Row[]>("events?select=id,day,until&repeat=eq.weekly&until=not.is.null&limit=500");
+    const rows = await rest<Row[]>("events?select=id,day,until,skip&repeat=eq.weekly&until=not.is.null&limit=500");
     for (const row of rows) {
-      await rest(`events?id=eq.${row.id}`, { method: "PATCH", body: { day: shiftDay(row.day, weeks), until: shiftDay(row.until, weeks) }, prefer: "return=minimal" });
+      await rest(`events?id=eq.${row.id}`, { method: "PATCH", body: { day: shiftDay(row.day, weeks), until: shiftDay(row.until, weeks), skip: row.skip.map((d) => shiftDay(d, weeks)) }, prefer: "return=minimal" });
     }
     return Response.json({ moved: rows.length });
   } catch (error) {
