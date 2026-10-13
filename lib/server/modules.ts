@@ -168,7 +168,7 @@ async function calendar(): Promise<ModuleResult<unknown>> {
   const combined = [ownEventsToIcs(rows, p.time_zone), ...texts.filter((t): t is string => t !== null)].join("\r\n");
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: p.time_zone }).format(new Date());
   return ok({
-    events: eventsForDay(combined, Date.now(), p.time_zone).map((e) => ({ time: e.time, title: e.title, place: e.place })),
+    events: eventsForDay(combined, Date.now(), p.time_zone).map((e) => ({ time: e.time, end: e.end, title: e.title, place: e.place })),
     mine: rows.filter((r) => (r.repeat !== "none" && (r.until === null || r.until >= today)) || (r.repeat === "none" && r.day >= today)).slice(0, 30).map((r) => ({ id: r.id, title: r.title, day: r.day, start: r.start_time?.slice(0, 5) ?? null, repeat: r.repeat, place: r.place, until: r.until, hidden: r.skip.length })),
     sources: sources.map((s) => ({ id: s.id, label: s.label })),
     failed: texts.filter((t) => t === null).length,
@@ -208,7 +208,26 @@ async function map(): Promise<ModuleResult<unknown>> {
   return ok({ home: { name: p.city, latitude: p.latitude, longitude: p.longitude }, places: pins, editable });
 }
 
-const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss, inbox, calendar, messages, map };
+async function today(): Promise<ModuleResult<unknown>> {
+  const p = await place();
+  const safe = (load: () => Promise<ModuleResult<unknown>>) => load().catch((): ModuleResult<unknown> => ({ status: "error", message: "unavailable" }));
+  const [cal, sky, todo, mail] = await Promise.all([safe(calendar), safe(weather), safe(tasks), safe(messages)]);
+  const pick = <T,>(r: ModuleResult<unknown>): T | null => (r.status === "ok" ? (r.data as T) : null);
+  const events = pick<{ events: { time: string; end: string; title: string; place: string }[] }>(cal);
+  const list = pick<{ tasks: { id: string; title: string; done: boolean }[] }>(todo);
+  const air = pick<{ condition: string; tempC: number; highC: number; lowC: number }>(sky);
+  const inbox = pick<{ unread: number }>(mail);
+  return ok({
+    timeZone: p.time_zone,
+    events: events ? events.events : null,
+    tasks: list ? list.tasks : null,
+    weather: air ? { condition: air.condition, tempC: air.tempC, highC: air.highC, lowC: air.lowC } : null,
+    unread: inbox ? inbox.unread : null,
+    editable: list !== null,
+  });
+}
+
+const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss, inbox, calendar, messages, map, today };
 const NEEDS_DB = new Set(["tasks", "notes", "monitor", "rss", "inbox"]);
 
 export async function loadModule(id: string): Promise<ModuleResult<unknown>> {

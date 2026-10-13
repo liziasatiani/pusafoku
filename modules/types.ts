@@ -8,7 +8,7 @@ export type ModuleResult<T> =
 
 export type ModuleSize = "S" | "M" | "L";
 
-export const PAGES = ["home", "study", "work", "map", "archive"] as const;
+export const PAGES = ["home", "today", "study", "work", "map", "archive"] as const;
 export type PageId = (typeof PAGES)[number];
 
 export type ModuleManifest = {

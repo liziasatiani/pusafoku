@@ -1,6 +1,6 @@
 import "server-only";
 
-export type DayEvent = { time: string; title: string; place: string; sort: number };
+export type DayEvent = { time: string; end: string; title: string; place: string; sort: number };
 
 type Wall = { y: number; m: number; d: number; h: number; mi: number; s: number };
 type Rule = { freq: string; interval: number; count: number | null; until: number | null; byDay: { n: number | null; dow: number }[]; byMonthDay: number[] };
@@ -167,14 +167,14 @@ export function eventsForDay(text: string, now: number, tz: string): DayEvent[] 
       if (!countedOccurrence(raw, y, m, d)) continue;
       if (raw.allDay) {
         const coversToday = k < Math.max(1, spanDays);
-        if (coversToday && !raw.exdates.includes(Date.UTC(y, m - 1, d))) out.push({ time: "All day", title: raw.title, place: raw.place, sort: -1 });
+        if (coversToday && !raw.exdates.includes(Date.UTC(y, m - 1, d))) out.push({ time: "All day", end: "", title: raw.title, place: raw.place, sort: -1 });
         continue;
       }
       const startUtc = zonedToUtc({ ...raw.start, y, m, d }, raw.tz);
       const duration = raw.end ? zonedToUtc(raw.end, raw.tz) - zonedToUtc(raw.start, raw.tz) : 0;
       if (raw.exdates.includes(startUtc)) continue;
       const overlaps = duration > 0 ? startUtc < dayEnd && startUtc + duration > dayStart : startUtc >= dayStart && startUtc < dayEnd;
-      if (overlaps) out.push({ time: startUtc < dayStart ? "00:00" : clock(startUtc, tz), title: raw.title, place: raw.place, sort: Math.max(startUtc, dayStart) });
+      if (overlaps) out.push({ time: startUtc < dayStart ? "00:00" : clock(startUtc, tz), end: duration > 0 ? (startUtc + duration >= dayEnd ? "24:00" : clock(startUtc + duration, tz)) : "", title: raw.title, place: raw.place, sort: Math.max(startUtc, dayStart) });
     }
   }
   return out.sort((a, b) => a.sort - b.sort).slice(0, 20);

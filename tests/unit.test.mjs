@@ -13,6 +13,7 @@ const gmail = await import("../lib/server/gmail.ts");
 const topo = await import("../lib/geo/topo.ts");
 const view = await import("../lib/geo/view.ts");
 const sun = await import("../lib/geo/sun.ts");
+const plan = await import("../lib/plan.ts");
 const placesInput = await import("../lib/server/places-input.ts");
 const world = JSON.parse((await import("node:fs")).readFileSync(new URL("../lib/geo/countries-50m.json", import.meta.url), "utf8"));
 
@@ -115,6 +116,27 @@ test("event input validation", () => {
   for (const bad of [{ ...ok, title: " " }, { ...ok, title: "a".repeat(201) }, { ...ok, day: "2026-02-30" }, { ...ok, day: "13/10/2026" }, { ...ok, start: "25:00" }, { ...ok, end: "12:00" }, { ...ok, start: "", end: "14:00" }, { ...ok, repeat: "hourly" }, { ...ok, until: "2026-10-12" }, { ...ok, until: "2027-02-30" }, { ...ok, repeat: "none", until: "2027-01-31" }, { ...ok, place: "x".repeat(81) }, { ...ok, place: "B\n15" }, { ...ok, place: 5 }, [], null, { ...ok, title: 5 }]) {
     assert.equal(calendarInput.parseEvent(bad), null);
   }
+});
+
+test("the day plan finds gaps and places tasks in them", () => {
+  const events = [{ time: "09:00", end: "10:55", title: "CTC", place: "B15" }, { time: "11:15", end: "13:10", title: "PST", place: "C1" }, { time: "All day", end: "", title: "Holiday" }];
+  const morning = plan.buildPlan(events, ["Write report", "Gym"], 8 * 60);
+  assert.deepEqual(morning.allDay, ["Holiday"]);
+  const kinds = morning.items.map((i) => `${i.kind}:${plan.clockText(i.start)}-${plan.clockText(i.end)}`);
+  assert.deepEqual(kinds, ["free:08:00-09:00", "event:09:00-10:55", "event:11:15-13:10", "free:13:10-13:55", "free:13:55-22:00"]);
+  assert.deepEqual(morning.items.filter((i) => i.kind === "free").map((i) => i.task), ["Write report", "Gym", null]);
+  assert.equal(morning.unplaced, 0);
+  const late = plan.buildPlan(events, ["A"], 12 * 60);
+  assert.ok(late.items.find((i) => i.kind === "event" && i.title === "CTC").past);
+  assert.ok(late.items.find((i) => i.kind === "event" && i.title === "PST").now);
+  assert.ok(late.items.every((i) => i.kind === "event" || i.start >= 12 * 60));
+  assert.equal(plan.buildPlan([], [], 23 * 60).items.length, 0);
+  assert.equal(plan.buildPlan([{ time: "09:00", end: "", title: "No end" }], [], 0).items.find((i) => i.kind === "event").end, 10 * 60);
+  const crowded = plan.buildPlan([], Array.from({ length: 25 }, (_, n) => `t${n}`), 7 * 60);
+  assert.ok(crowded.unplaced > 0);
+  assert.equal(plan.toMinutes("25:61"), null);
+  assert.equal(plan.toMinutes("nonsense"), null);
+  assert.equal(plan.durationText(125), "2h 5m");
 });
 
 test("pinned places are validated and rounded", () => {
