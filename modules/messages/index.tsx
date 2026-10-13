@@ -48,6 +48,7 @@ const def: ModuleDef<Data> = {
     env: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN"],
     refreshSeconds: 120,
     size: "M",
+    pages: ["home"],
   },
   Panel: ModulePanel,
   lines: toLines,

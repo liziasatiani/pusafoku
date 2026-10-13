@@ -2,6 +2,9 @@
 
 Each panel is one module in `modules/`. A panel shows "not connected" until its data source is set up,. Every panel has a FILE button that opens its case file: what it is, when it last updated, how often it refreshes and which settings it needs.
 
+## Pages
+Four pages, chosen with the tabs under the title (at the bottom of the screen on a phone): HOME has the clock, sky, schedule, operations and messages around the globe and command line; STUDY has the schedule and operations; WORK has signals, network and authorizations; ARCHIVE has the archive. The page is kept in the address (`#work`), so a reload or a bookmark opens the same page. The command line is on every page, and the WALL and LINE switch only appears on HOME. Each panel belongs to one or more pages through the `pages` list in its manifest.
+
 ## Settings
 The SETTINGS button opens a form for your name, language (English or Georgian), currency and city. Choosing Georgian switches the whole screen: buttons, panel names, messages, the case files, the command answers and the date, and it also accepts Georgian commands such as `დღის დაწყება`, `ქსელი` and `ცა`. The login screen stays in English because the language is only known after you log in. Type a city, press FIND and pick the match: its coordinates and time zone are filled in for you, using Open-Meteo's place search. Saving updates the Clock greeting, the Sky weather, the time zone of Schedule and Archive times, and the default voice language. Messages that include a number limit (for example a maximum of 10 feeds) stay in English. Needs the database to save; without it the defaults are shown.
 

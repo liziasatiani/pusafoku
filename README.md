@@ -4,7 +4,7 @@ A private command centre for one person. It shows your tasks, notes, websites, n
 
 ## Four-line how-to
 
-1. Open the site and log in with your password.
+1. Open the site and log in with your password. Use the tabs HOME, STUDY, WORK and ARCHIVE to move between pages.
 2. Press SETTINGS to set your name, language (English or Georgian) and city, then fill the panels: tasks in Operations, notes in Archive, websites in Network, news feeds in Signals, events or calendar addresses in Schedule.
 3. Type or tap MIC and say a command: `start my day`, `network`, `sky`, `authorizations`.
 4. Items other tools send to the inbox wait in Authorizations until you Approve, Edit or Reject them.

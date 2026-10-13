@@ -33,6 +33,7 @@ const def: ModuleDef<Data> = {
     env: [],
     refreshSeconds: 900,
     size: "S",
+    pages: ["home"],
   },
   Panel: ModulePanel,
   lines: toLines,

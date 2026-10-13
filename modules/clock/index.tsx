@@ -51,6 +51,7 @@ const def: ModuleDef<Data> = {
     env: [],
     refreshSeconds: 1,
     size: "S",
+    pages: ["home"],
     always: true,
   },
   Panel: ({ result }) =>

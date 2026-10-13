@@ -65,6 +65,7 @@ const def: ModuleDef<Data> = {
     env: ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"],
     refreshSeconds: 60,
     size: "M",
+    pages: ["home", "study"],
   },
   Panel: ModulePanel,
   lines: toLines,

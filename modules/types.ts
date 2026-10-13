@@ -8,6 +8,9 @@ export type ModuleResult<T> =
 
 export type ModuleSize = "S" | "M" | "L";
 
+export const PAGES = ["home", "study", "work", "archive"] as const;
+export type PageId = (typeof PAGES)[number];
+
 export type ModuleManifest = {
   id: string;
   name: string;
@@ -15,6 +18,7 @@ export type ModuleManifest = {
   env: string[];
   refreshSeconds: number;
   size: ModuleSize;
+  pages: PageId[];
   always?: boolean;
 };
 

@@ -11,7 +11,7 @@ import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { translate, type Vars } from "@/lib/i18n";
 import { answer, type Results } from "@/lib/commands";
 import { MODULES } from "@/modules/registry";
-import type { AnyModule, ModuleResult } from "@/modules/types";
+import { PAGES, type AnyModule, type ModuleResult, type PageId } from "@/modules/types";
 import styles from "./hud.module.css";
 
 const THEME_KEY = "pusafoku.theme";
@@ -19,6 +19,11 @@ const INTRO_KEY = "pusafoku.intro";
 const VIEW_KEY = "pusafoku.view";
 const STATUS_IDS = ["inbox", "monitor", "rss", "tasks"];
 type View = "wall" | "line";
+
+function pageFromHash(): PageId {
+  const hash = window.location.hash.replace("#", "");
+  return PAGES.find((p) => p === hash) ?? "home";
+}
 type Theme = "system" | "dark" | "light";
 
 const FALLBACK_SETTINGS: LiveSettings = { ...DEFAULT_SETTINGS, latitude: 41.7151, longitude: 44.8271, editable: false };
@@ -44,6 +49,7 @@ export default function Hud() {
   const [live, setLive] = useState<Record<string, ModuleResult<unknown>>>({});
   const [settings, setSettings] = useState<LiveSettings>(FALLBACK_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
+  const [page, setPage] = useState<PageId>("home");
   const [intro, setIntro] = useState(true);
 
   useEffect(() => {
@@ -56,6 +62,19 @@ export default function Hud() {
     if (saved === "wall" || saved === "line") setView(saved);
     else setView(window.matchMedia("(max-width: 759px)").matches ? "line" : "wall");
   }, []);
+
+  useEffect(() => {
+    const sync = () => setPage(pageFromHash());
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, []);
+
+  function go(next: PageId) {
+    window.location.hash = next === "home" ? "" : next;
+    setPage(next);
+    window.scrollTo({ top: 0 });
+  }
 
   function switchView() {
     const next: View = view === "line" ? "wall" : "line";
@@ -164,9 +183,11 @@ export default function Hud() {
         <header className={styles.bar}>
           <h1 className={styles.brand}>PUSAFOKU</h1>
           <div className={styles.controls}>
-            <button type="button" className={styles.chip} onClick={switchView} title={tr("Switch between the wall and the command line")}>
-              {tr(view === "line" ? "WALL" : "LINE")}
-            </button>
+            {page === "home" ? (
+              <button type="button" className={styles.chip} onClick={switchView} title={tr("Switch between the wall and the command line")}>
+                {tr(view === "line" ? "WALL" : "LINE")}
+              </button>
+            ) : null}
             <button type="button" className={styles.chip} onClick={() => setShowSettings(true)}>
               {tr("SETTINGS")}
             </button>
@@ -176,7 +197,41 @@ export default function Hud() {
           </div>
         </header>
 
-        {view === "line" ? (
+        <nav className={styles.pageNav} aria-label={tr("Pages")}>
+          {PAGES.map((id) => (
+            <button key={id} type="button" className={styles.tab} aria-current={page === id ? "page" : undefined} onClick={() => go(id)}>
+              {tr(id.toUpperCase())}
+            </button>
+          ))}
+        </nav>
+
+        {page !== "home" ? (
+          <main className={styles.pageGrid}>
+            <section className={styles.pageCli} aria-label={tr("Core")}>
+              <div className={styles.coreBar}>
+                <CommandLine ask={ask} onMode={onMode} defaultLang={settings.language} compact />
+              </div>
+            </section>
+            {MODULES.filter((mod) => mod.manifest.pages.includes(page)).map((mod) => {
+              const Panel = mod.Panel;
+              const result = results.get(mod.manifest.id) ?? resultFor(mod, live, settings);
+              return (
+                <div key={mod.manifest.id} className={styles.tile}>
+                  <div className={styles.tileInner}>
+                    <button type="button" className={styles.fileBtn} onClick={() => setOpenFile(mod.manifest.id)} aria-label={tr("Open {name} file", { name: tr(mod.manifest.name) })}>
+                      {tr("FILE")}
+                    </button>
+                    <div className={styles.tilePanel}>
+                      <Panel result={result} refresh={() => void load(mod.manifest.id)} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </main>
+        ) : null}
+
+        {page === "home" && view === "line" ? (
           <main className={styles.lineView}>
             <DigitGlobe state={coreState} className={styles.lineGlobe} />
             <ul className={styles.status}>
@@ -200,7 +255,7 @@ export default function Hud() {
           </main>
         ) : null}
 
-        <main className={styles.grid} hidden={view !== "wall"}>
+        <main className={styles.grid} hidden={page !== "home" || view !== "wall"}>
           <section className={styles.coreTile} aria-label={tr("Core")}>
             <span className={styles.stateTag} role="status" aria-live="polite">{tr(coreState)}</span>
             <div className={styles.coreStage}>
@@ -211,7 +266,7 @@ export default function Hud() {
             </div>
           </section>
 
-          {MODULES.map((mod) => {
+          {MODULES.filter((mod) => mod.manifest.pages.includes("home")).map((mod) => {
             const tile = { id: mod.manifest.id, size: mod.manifest.size };
             const Panel = mod.Panel;
             const result = results.get(tile.id) ?? resultFor(mod, live, settings);

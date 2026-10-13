@@ -84,6 +84,7 @@ const def: ModuleDef<Data> = {
     env: ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"],
     refreshSeconds: 600,
     size: "M",
+    pages: ["work"],
   },
   Panel: ModulePanel,
   lines: toLines,
