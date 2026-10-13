@@ -613,3 +613,8 @@
   opacity: 0.5;
   cursor: default;
 }
+
+.unread {
+  color: var(--glow);
+  font-weight: 600;
+}

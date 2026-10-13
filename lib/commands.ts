@@ -12,6 +12,7 @@ const ROUTES: { id: string; words: RegExp }[] = [
   { id: "notes", words: /archive|note|არქივ|ჩანაწერ|შენიშვნ/ },
   { id: "rss", words: /signal|news|feed|headline|სიგნალ|სიახლე|ამბ/ },
   { id: "monitor", words: /network|site|website|down|asset|uptime|ქსელ|საიტ|ვებგვერდ/ },
+  { id: "messages", words: /message|chat|telegram|შეტყობინებ|მესიჯ/ },
   { id: "inbox", words: /authori[sz]|approv|waiting|ავტორიზაც|დასტურ|მომლოდინე/ },
   { id: "clock", words: /time|date|clock|today|დრო|საათ|თარიღ/ },
 ];
@@ -48,13 +49,13 @@ export function answer(input: string, modules: AnyModule[], results: Results, la
 
   if (DAY.test(text)) {
     const out = [shout(tr(greetingKey()) + ".")];
-    for (const id of ["calendar", "weather", "tasks", "inbox", "monitor", "rss"]) {
+    for (const id of ["calendar", "weather", "tasks", "messages", "inbox", "monitor", "rss"]) {
       const mod = byId.get(id);
       if (mod) out.push(...linesFor(mod));
     }
     return out;
   }
-  if (HELP.test(text)) return [tr("COMMANDS: START MY DAY / AUTHORIZATIONS / NETWORK / SKY / SCHEDULE / OPERATIONS / SIGNALS / ARCHIVE"), tr("ANYTHING ELSE: NO DATA ON FILE.")];
+  if (HELP.test(text)) return [tr("COMMANDS: START MY DAY / AUTHORIZATIONS / MESSAGES / NETWORK / SKY / SCHEDULE / OPERATIONS / SIGNALS / ARCHIVE"), tr("ANYTHING ELSE: NO DATA ON FILE.")];
   for (const route of ROUTES) {
     const mod = byId.get(route.id);
     if (mod && route.words.test(text)) return linesFor(mod);

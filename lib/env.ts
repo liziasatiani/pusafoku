@@ -27,3 +27,13 @@ export function inboxToken(): string | undefined {
 export function calendarUrl(): string | undefined {
   return process.env.CALENDAR_ICS_URL || undefined;
 }
+
+export function telegramSecret(): string | undefined {
+  const value = process.env.TELEGRAM_WEBHOOK_SECRET;
+  return value && value.length >= 24 ? value : undefined;
+}
+
+export function telegramOwner(): string | undefined {
+  const value = process.env.TELEGRAM_OWNER_ID;
+  return value && /^\d{1,20}$/.test(value) ? value : undefined;
+}

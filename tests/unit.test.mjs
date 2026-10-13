@@ -9,6 +9,7 @@ const password = await import("../lib/password.ts");
 const session = await import("../lib/session.ts");
 const commands = await import("../lib/commands.ts");
 const settings = await import("../lib/server/settings-input.ts");
+const telegram = await import("../lib/server/telegram-input.ts");
 
 const TZ = "Asia/Tbilisi";
 const NOW = Date.parse("2026-10-13T08:00:00Z");
@@ -94,6 +95,27 @@ test("event input validation", () => {
   for (const bad of [{ ...ok, title: " " }, { ...ok, title: "a".repeat(201) }, { ...ok, day: "2026-02-30" }, { ...ok, day: "13/10/2026" }, { ...ok, start: "25:00" }, { ...ok, end: "12:00" }, { ...ok, start: "", end: "14:00" }, { ...ok, repeat: "hourly" }, { ...ok, until: "2026-10-12" }, { ...ok, until: "2027-02-30" }, { ...ok, repeat: "none", until: "2027-01-31" }, { ...ok, place: "x".repeat(81) }, { ...ok, place: "B\n15" }, { ...ok, place: 5 }, [], null, { ...ok, title: 5 }]) {
     assert.equal(calendarInput.parseEvent(bad), null);
   }
+});
+
+test("telegram updates are accepted only from the owner", () => {
+  const msg = (extra = {}, from = 424242) => ({ update_id: 1, message: { message_id: 1, date: 1791900000, chat: { id: from, type: "private" }, from: { id: from, first_name: "A" }, text: "  hello \n there ", ...extra } });
+  assert.deepEqual(telegram.parseUpdate(msg(), "424242"), { sender: "Me", body: "hello there", at: new Date(1791900000 * 1000).toISOString() });
+  assert.equal(telegram.parseUpdate(msg({}, 99), "424242"), null);
+  assert.equal(telegram.parseUpdate(msg({ chat: { id: 424242, type: "group" } }), "424242"), null);
+  assert.equal(telegram.parseUpdate(msg({ text: "   " }), "424242"), null);
+  assert.equal(telegram.parseUpdate(msg({ text: undefined, photo: [] }), "424242"), null);
+  assert.equal(telegram.parseUpdate(msg({ text: undefined, caption: "from a photo" }), "424242").body, "from a photo");
+  assert.equal(telegram.parseUpdate({ update_id: 1, edited_message: msg().message }, "424242"), null);
+  assert.equal(telegram.parseUpdate(null, "424242"), null);
+  assert.equal(telegram.parseUpdate("x", "424242"), null);
+  assert.equal(telegram.parseUpdate(msg({ text: "a".repeat(5000) }), "424242").body.length, 1000);
+  const forwarded = telegram.parseUpdate(msg({ forward_origin: { type: "user", sender_user: { id: 7, first_name: "Nino", last_name: "K" } } }), "424242");
+  assert.equal(forwarded.sender, "Nino K");
+  assert.equal(telegram.parseUpdate(msg({ forward_origin: { type: "hidden_user", sender_user_name: "Hidden Person" } }), "424242").sender, "Hidden Person");
+  assert.equal(telegram.parseUpdate(msg({ forward_origin: { type: "channel", chat: { title: "News" } } }), "424242").sender, "News");
+  assert.equal(telegram.parseUpdate(msg({ forward_origin: { type: "user", sender_user: { first_name: "x\u0000\n<b>" } } }), "424242").sender, "x <b>");
+  const future = telegram.parseUpdate(msg({ date: 99999999999 }), "424242");
+  assert.ok(Date.parse(future.at) <= Date.now());
 });
 
 test("calendar addresses", () => {
