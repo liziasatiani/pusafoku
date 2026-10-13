@@ -180,6 +180,28 @@ describe("secrets stay on the server", () => {
   });
 });
 
+describe("browser protections", () => {
+  const check = async (path, options) => (await call("GET", path, options)).headers;
+  test("pages and data carry the security headers", async () => {
+    for (const [path, authed] of [["/login", false], ["/", true], ["/api/modules/weather", true], ["/api/settings", false]]) {
+      const h = await check(path, { authed });
+      assert.equal(h.get("x-content-type-options"), "nosniff", path);
+      assert.equal(h.get("x-frame-options"), "DENY", path);
+      assert.equal(h.get("referrer-policy"), "no-referrer", path);
+      assert.equal(h.get("cross-origin-opener-policy"), "same-origin", path);
+      assert.equal(h.get("cross-origin-resource-policy"), "same-origin", path);
+      assert.match(h.get("permissions-policy"), /camera=\(\)/, path);
+      assert.match(h.get("permissions-policy"), /microphone=\(self\)/, path);
+    }
+  });
+  test("the content policy keeps everything on this site", async () => {
+    const csp = (await check("/login")).get("content-security-policy");
+    for (const rule of ["default-src 'self'", "connect-src 'self'", "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'"]) assert.ok(csp.includes(rule), rule);
+    assert.ok(!/\*|https?:/.test(csp.replace(/'self'/g, "")), "no outside sources are allowed");
+  });
+  test("the server does not announce what it runs on", async () => assert.equal((await check("/login")).get("x-powered-by"), null));
+});
+
 describe("the repository", () => {
   test("no secret files are tracked", () => {
     const files = execFileSync("git", ["ls-files"], { encoding: "utf8" }).split("\n").filter(Boolean);
