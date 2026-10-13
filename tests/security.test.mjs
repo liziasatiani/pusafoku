@@ -14,8 +14,9 @@ const SENTINELS = {
   SUPABASE_URL: "https://sentinel-database-host.invalid",
   SUPABASE_SERVICE_ROLE_KEY: "sentinel-service-role-key-not-for-browsers-0001",
   INBOX_TOKEN: "sentinel-inbox-token-abcdefghijklmnop",
-  TELEGRAM_WEBHOOK_SECRET: "sentinel-telegram-secret-abcdefghijklmnop",
-  TELEGRAM_OWNER_ID: "424242424",
+  GOOGLE_CLIENT_ID: "sentinel-google-client-id-0123456789.apps.googleusercontent.invalid",
+  GOOGLE_CLIENT_SECRET: "sentinel-google-client-secret-0123456789",
+  GOOGLE_REFRESH_TOKEN: "sentinel-google-refresh-token-0123456789abcdef",
   CRON_SECRET: "sentinel-cron-secret-abcdefghijklmnop",
   CALENDAR_ICS_URL: "https://sentinel-calendar-host.invalid/private-token/basic.ics",
 };
@@ -71,7 +72,7 @@ describe("logged-out visitors", () => {
   const PROTECTED = [
     ["GET", "/api/modules/weather"], ["GET", "/api/modules/tasks"], ["GET", "/api/modules/notes"], ["GET", "/api/modules/monitor"],
     ["GET", "/api/modules/rss"], ["GET", "/api/modules/inbox"], ["GET", "/api/modules/calendar"], ["GET", "/api/modules/messages"],
-    ["POST", "/api/messages/read"], ["DELETE", `/api/messages/${ID}`], ["POST", "/api/events/shift"], ["POST", "/api/events/skip"], ["DELETE", "/api/events/skip"],
+    ["POST", "/api/events/shift"], ["POST", "/api/events/skip"], ["DELETE", "/api/events/skip"],
     ["POST", "/api/tasks"], ["PATCH", `/api/tasks/${ID}`], ["DELETE", `/api/tasks/${ID}`],
     ["POST", "/api/notes"], ["DELETE", `/api/notes/${ID}`],
     ["POST", "/api/feeds"], ["DELETE", `/api/feeds/${ID}`],
@@ -103,17 +104,6 @@ describe("open doors guard themselves", () => {
     assert.equal((await call("POST", "/api/inbox", { body: { title: "x", draft: "a".repeat(20000) }, headers: auth })).status, 413);
     assert.equal((await call("POST", "/api/inbox", { body: "not json", headers: auth })).status, 400);
   });
-  test("the telegram door needs its secret and ignores strangers", async () => {
-    const secret = { "x-telegram-bot-api-secret-token": SENTINELS.TELEGRAM_WEBHOOK_SECRET };
-    const update = (id, extra = {}) => ({ update_id: 1, message: { message_id: 1, date: 1791900000, chat: { id, type: "private" }, from: { id, first_name: "A" }, text: "hello", ...extra } });
-    assert.equal((await call("POST", "/api/telegram", { body: update(424242424) })).status, 401);
-    assert.equal((await call("POST", "/api/telegram", { body: update(424242424), headers: { "x-telegram-bot-api-secret-token": "wrong-wrong-wrong-wrong-wrong" } })).status, 401);
-    assert.equal((await call("POST", "/api/telegram", { body: update(111), headers: secret })).status, 200);
-    assert.equal((await call("POST", "/api/telegram", { body: "not json", headers: secret })).status, 200);
-    assert.equal((await call("POST", "/api/telegram", { body: { update_id: 1, message: { ...update(424242424).message, text: "a".repeat(30000) } }, headers: secret })).status, 413);
-    assert.equal((await call("POST", "/api/telegram", { body: update(424242424), headers: secret })).status, 503);
-    assert.equal((await call("GET", "/api/telegram")).status, 401);
-  });
   test("the cron route needs its secret", async () => {
     assert.equal((await call("GET", "/api/cron/monitor")).status, 401);
     assert.equal((await call("GET", "/api/cron/monitor", { headers: { authorization: "Bearer wrong" } })).status, 401);
@@ -137,7 +127,7 @@ describe("logged-in visitors", () => {
   test("writes from another site are refused", async () => {
     const forms = [
       ["POST", "/api/tasks", { title: "x" }], ["POST", "/api/notes", { text: "x" }], ["POST", "/api/feeds", { url: "https://example.com/feed" }],
-      ["POST", "/api/events", { title: "x", day: "2026-10-13" }], ["POST", "/api/events/shift", { weeks: 26 }], ["POST", "/api/events/skip", { from: "2026-10-27", to: "2026-11-05" }], ["DELETE", "/api/events/skip", undefined], ["POST", "/api/messages/read", {}], ["DELETE", `/api/messages/${ID}`, undefined], ["POST", "/api/calendar/sources", { url: "https://example.com/a.ics" }],
+      ["POST", "/api/events", { title: "x", day: "2026-10-13" }], ["POST", "/api/events/shift", { weeks: 26 }], ["POST", "/api/events/skip", { from: "2026-10-27", to: "2026-11-05" }], ["DELETE", "/api/events/skip", undefined], ["POST", "/api/calendar/sources", { url: "https://example.com/a.ics" }],
       ["POST", "/api/monitor/sites", { url: "https://example.com" }], ["POST", "/api/monitor/check", {}], ["PATCH", `/api/approvals/${ID}`, { action: "approve" }],
       ["DELETE", `/api/tasks/${ID}`, undefined], ["PATCH", "/api/settings", { name: "x" }],
     ];

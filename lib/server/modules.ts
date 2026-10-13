@@ -1,8 +1,9 @@
 import "server-only";
 import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { DbUnavailable, rest } from "@/lib/server/db";
-import { calendarUrl } from "@/lib/env";
+import { calendarUrl, googleConfig } from "@/lib/env";
 import { ago, readFeed, type Headline } from "@/lib/server/feeds";
+import { GoogleDenied, readMailbox } from "@/lib/server/gmail";
 import { eventsForDay, ownEventsToIcs } from "@/lib/server/ics";
 import { fetchPublicText } from "@/lib/server/safe-fetch";
 import type { ModuleResult } from "@/modules/types";
@@ -170,24 +171,25 @@ async function calendar(): Promise<ModuleResult<unknown>> {
   });
 }
 
-type MessageRow = { id: string; channel: string; sender: string; body: string; read: boolean; received_at: string };
-
 async function messages(): Promise<ModuleResult<unknown>> {
-  const [rows, unread, p] = await Promise.all([
-    rest<MessageRow[]>("messages?select=id,channel,sender,body,read,received_at&order=received_at.desc&limit=20"),
-    rest<{ id: string }[]>("messages?select=id&read=eq.false&limit=100"),
-    place(),
-  ]);
+  if (!googleConfig()) return notConnected("Connect your Google account to see unread email.");
+  let box;
+  try {
+    box = await readMailbox();
+  } catch (error) {
+    return { status: "error", message: error instanceof GoogleDenied ? "Google refused the sign-in" : "Could not read Gmail" };
+  }
+  const p = await place();
   const day = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: p.time_zone }).format(new Date(iso));
   const label = (iso: string) =>
     day(iso) === day(new Date().toISOString())
       ? new Intl.DateTimeFormat("en-GB", { timeZone: p.time_zone, hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(iso))
       : new Intl.DateTimeFormat("en-GB", { timeZone: p.time_zone, day: "2-digit", month: "2-digit" }).format(new Date(iso));
-  return ok({ unread: unread.length, items: rows.map((r) => ({ id: r.id, channel: r.channel, sender: r.sender, text: r.body, at: label(r.received_at), read: r.read })) });
+  return ok({ unread: box.unread, items: box.items.map((m) => ({ id: m.id, sender: m.sender, subject: m.subject, at: label(m.at) })) });
 }
 
 const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss, inbox, calendar, messages };
-const NEEDS_DB = new Set(["tasks", "notes", "monitor", "rss", "inbox", "messages"]);
+const NEEDS_DB = new Set(["tasks", "notes", "monitor", "rss", "inbox"]);
 
 export async function loadModule(id: string): Promise<ModuleResult<unknown>> {
   const fetcher = FETCHERS[id];

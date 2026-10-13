@@ -22,8 +22,9 @@ Set these in Vercel under Settings, Environment Variables (Production, mark secr
 | `SUPABASE_URL` | for stored data | Address of your database project. |
 | `SUPABASE_SERVICE_ROLE_KEY` | for stored data | Secret key of your database project. Server only; never exposed to the browser. |
 | `INBOX_TOKEN` | for the inbox | 24 or more characters. Other tools send it as `Authorization: Bearer <token>`. |
-| `TELEGRAM_WEBHOOK_SECRET` | for Messages | 24 or more characters. Telegram sends it with every message, and anything without it is refused. |
-| `TELEGRAM_OWNER_ID` | for Messages | Your own numeric Telegram user id. Messages from anyone else are ignored. |
+| `GOOGLE_CLIENT_ID` | for Messages | Client ID of your own Google OAuth app. |
+| `GOOGLE_CLIENT_SECRET` | for Messages | Client secret of the same app. Server only. |
+| `GOOGLE_REFRESH_TOKEN` | for Messages | Long-lived token for read-only Gmail access (metadata only). Server only. |
 | `CRON_SECRET` | for the timer | 24 or more characters. The scheduled website check sends it. |
 | `CALENDAR_ICS_URL` | optional | One extra calendar address. Calendars can also be connected inside the Schedule panel. |
 
@@ -34,12 +35,7 @@ A random value: `node -e "console.log(require('crypto').randomBytes(24).toString
 1. Create a database project and run `supabase/schema.sql` in its SQL editor. It creates every table with row level security on and no public access.
 2. Create the Vercel project from this repository and add the variables above.
 3. For the 30 minute website check, add two repository secrets in GitHub under Settings, Secrets and variables, Actions: `CRON_SECRET` (same value as in Vercel) and `SITE_URL` (your site address with no slash at the end). The workflow in `.github/workflows/monitor.yml` does the rest.
-4. For Messages, create a bot in Telegram: open @BotFather, send `/newbot` and copy the token. Send your new bot any message, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` in a browser and copy the number after `"from":{"id":`. Add `TELEGRAM_OWNER_ID` (that number) and `TELEGRAM_WEBHOOK_SECRET` (a random value) in Vercel and redeploy. Then, once, in a terminal, point the bot at your site, keeping the token in a shell variable so it is not left in your history file:
-   ```
-   read -s TOKEN; read -s SECRET
-   curl -s "https://api.telegram.org/bot$TOKEN/setWebhook" -d "url=https://YOUR-SITE/api/telegram" -d "secret_token=$SECRET" -d 'allowed_updates=["message"]'
-   ```
-   The bot token is only used for this one call and is never stored by the site.
+4. For Messages, create a Google OAuth app at console.cloud.google.com: new project, enable the Gmail API, set up the consent screen with yourself as the test user, then publish it (Audience, Publish app) so the token does not expire after 7 days. Create an OAuth client of type Web application with `https://developers.google.com/oauthplayground` as an authorized redirect address. In the OAuth Playground (gear icon), tick Use your own OAuth credentials, paste the client ID and secret, authorize only the scope `https://www.googleapis.com/auth/gmail.metadata`, exchange the code and copy the refresh token. Add the three `GOOGLE_` variables in Vercel and redeploy. The scope shows senders, subjects and dates only; it cannot read message bodies, send, delete or change anything.
 5. Your name, language, city, time zone and currency are set with the SETTINGS button on the page. They are stored in the single row of the `settings` table.
 
 ## Commands

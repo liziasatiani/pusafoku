@@ -9,7 +9,7 @@ const password = await import("../lib/password.ts");
 const session = await import("../lib/session.ts");
 const commands = await import("../lib/commands.ts");
 const settings = await import("../lib/server/settings-input.ts");
-const telegram = await import("../lib/server/telegram-input.ts");
+const gmail = await import("../lib/server/gmail.ts");
 
 const TZ = "Asia/Tbilisi";
 const NOW = Date.parse("2026-10-13T08:00:00Z");
@@ -112,25 +112,25 @@ test("event input validation", () => {
   }
 });
 
-test("telegram updates are accepted only from the owner", () => {
-  const msg = (extra = {}, from = 424242) => ({ update_id: 1, message: { message_id: 1, date: 1791900000, chat: { id: from, type: "private" }, from: { id: from, first_name: "A" }, text: "  hello \n there ", ...extra } });
-  assert.deepEqual(telegram.parseUpdate(msg(), "424242"), { sender: "Me", body: "hello there", at: new Date(1791900000 * 1000).toISOString() });
-  assert.equal(telegram.parseUpdate(msg({}, 99), "424242"), null);
-  assert.equal(telegram.parseUpdate(msg({ chat: { id: 424242, type: "group" } }), "424242"), null);
-  assert.equal(telegram.parseUpdate(msg({ text: "   " }), "424242"), null);
-  assert.equal(telegram.parseUpdate(msg({ text: undefined, photo: [] }), "424242"), null);
-  assert.equal(telegram.parseUpdate(msg({ text: undefined, caption: "from a photo" }), "424242").body, "from a photo");
-  assert.equal(telegram.parseUpdate({ update_id: 1, edited_message: msg().message }, "424242"), null);
-  assert.equal(telegram.parseUpdate(null, "424242"), null);
-  assert.equal(telegram.parseUpdate("x", "424242"), null);
-  assert.equal(telegram.parseUpdate(msg({ text: "a".repeat(5000) }), "424242").body.length, 1000);
-  const forwarded = telegram.parseUpdate(msg({ forward_origin: { type: "user", sender_user: { id: 7, first_name: "Nino", last_name: "K" } } }), "424242");
-  assert.equal(forwarded.sender, "Nino K");
-  assert.equal(telegram.parseUpdate(msg({ forward_origin: { type: "hidden_user", sender_user_name: "Hidden Person" } }), "424242").sender, "Hidden Person");
-  assert.equal(telegram.parseUpdate(msg({ forward_origin: { type: "channel", chat: { title: "News" } } }), "424242").sender, "News");
-  assert.equal(telegram.parseUpdate(msg({ forward_origin: { type: "user", sender_user: { first_name: "x\u0000\n<b>" } } }), "424242").sender, "x <b>");
-  const future = telegram.parseUpdate(msg({ date: 99999999999 }), "424242");
-  assert.ok(Date.parse(future.at) <= Date.now());
+test("gmail headers become safe short labels", () => {
+  assert.equal(gmail.senderName('"Nino K" <nino@example.com>'), "Nino K");
+  assert.equal(gmail.senderName("Nino K <nino@example.com>"), "Nino K");
+  assert.equal(gmail.senderName("nino@example.com"), "nino@example.com");
+  assert.equal(gmail.senderName("<nino@example.com>"), "nino@example.com");
+  assert.equal(gmail.senderName("x\u0000\n<b>y</b> <a@b.c>"), "x <b>y</b>");
+  assert.equal(gmail.senderName(`${"a".repeat(300)} <a@b.c>`).length <= 60, true);
+  assert.equal(gmail.senderName(undefined), "");
+  assert.equal(gmail.cleanText("  a \n\t b  ", 10), "a b");
+  assert.equal(gmail.cleanText("abcdef", 3), "abc");
+  assert.equal(gmail.cleanText(5, 3), "");
+  const raw = (extra = {}) => ({ id: "18f3a9c2b7d4e601", internalDate: "1791900000000", payload: { headers: [{ name: "From", value: '"Nino K" <nino@example.com>' }, { name: "SUBJECT", value: "  October   invoice " }] }, ...extra });
+  assert.deepEqual(gmail.toItem(raw()), { id: "18f3a9c2b7d4e601", sender: "Nino K", subject: "October invoice", at: new Date(1791900000000).toISOString() });
+  assert.equal(gmail.toItem(raw({ id: "../../etc/passwd" })), null);
+  assert.equal(gmail.toItem(raw({ id: 5 })), null);
+  assert.equal(gmail.toItem({ id: "abcdef123456" }).subject, "");
+  assert.equal(gmail.toItem({ id: "abcdef123456" }).sender, "?");
+  assert.ok(Date.parse(gmail.toItem(raw({ internalDate: "99999999999999" })).at) <= Date.now());
+  assert.equal(gmail.toItem(raw({ payload: { headers: "nope" } })).sender, "?");
 });
 
 test("calendar addresses", () => {

@@ -12,7 +12,7 @@ const ROUTES: { id: string; words: RegExp }[] = [
   { id: "notes", words: /archive|note|არქივ|ჩანაწერ|შენიშვნ/ },
   { id: "rss", words: /signal|news|feed|headline|სიგნალ|სიახლე|ამბ/ },
   { id: "monitor", words: /network|site|website|down|asset|uptime|ქსელ|საიტ|ვებგვერდ/ },
-  { id: "messages", words: /message|chat|telegram|შეტყობინებ|მესიჯ/ },
+  { id: "messages", words: /message|e-?mail|gmail|შეტყობინებ|მესიჯ|ელფოსტ/ },
   { id: "inbox", words: /authori[sz]|approv|waiting|ავტორიზაც|დასტურ|მომლოდინე/ },
   { id: "clock", words: /time|date|clock|today|დრო|საათ|თარიღ/ },
 ];

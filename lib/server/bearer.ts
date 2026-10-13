@@ -6,9 +6,3 @@ export function bearerMatches(request: Request, secret: string): boolean {
   const expected = Buffer.from(`Bearer ${secret}`);
   return given.length === expected.length && timingSafeEqual(given, expected);
 }
-
-export function headerMatches(request: Request, name: string, secret: string): boolean {
-  const given = Buffer.from(request.headers.get(name) ?? "");
-  const expected = Buffer.from(secret);
-  return given.length === expected.length && timingSafeEqual(given, expected);
-}
