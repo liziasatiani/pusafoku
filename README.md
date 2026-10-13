@@ -5,7 +5,7 @@ A private command centre for one person. It shows your tasks, notes, websites, n
 ## Five-line how-to
 
 1. Open the site and log in with your password.
-2. Press SETTINGS to set your name and city, then fill the panels: tasks in Operations, notes in Archive, websites in Network, news feeds in Signals, events or calendar addresses in Schedule.
+2. Press SETTINGS to set your name, language (English or Georgian) and city, then fill the panels: tasks in Operations, notes in Archive, websites in Network, news feeds in Signals, events or calendar addresses in Schedule.
 3. Type or tap MIC and say a command: `start my day`, `network`, `sky`, `authorizations`.
 4. Items other tools send to the inbox wait in Authorizations until you Approve, Edit or Reject them.
 5. DEMO shows sample data. Turn it off for your real data.
