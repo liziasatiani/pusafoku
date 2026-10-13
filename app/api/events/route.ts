@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   } catch {
     event = null;
   }
-  if (!event) return Response.json({ error: "Check the title, date, times and repeat" }, { status: 400 });
+  if (!event) return Response.json({ error: "Check the title, date, times, room and repeat" }, { status: 400 });
   try {
     const existing = await rest<{ id: string }[]>(`events?select=id&limit=${MAX_EVENTS}`);
     if (existing.length >= MAX_EVENTS) return Response.json({ error: `Limit is ${MAX_EVENTS} events` }, { status: 400 });

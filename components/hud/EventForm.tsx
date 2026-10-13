@@ -18,6 +18,8 @@ export default function EventForm({ onDone }: { onDone: () => void }) {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [repeat, setRepeat] = useState("none");
+  const [place, setPlace] = useState("");
+  const [until, setUntil] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -29,13 +31,15 @@ export default function EventForm({ onDone }: { onDone: () => void }) {
       const res = await fetch("/api/events", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title, day, start, end, repeat }),
+        body: JSON.stringify({ title, day, start, end, repeat, place, until: repeat === "none" ? "" : until }),
       });
       if (res.ok) {
         setTitle("");
         setStart("");
         setEnd("");
         setRepeat("none");
+        setPlace("");
+        setUntil("");
         onDone();
       } else {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -75,6 +79,16 @@ export default function EventForm({ onDone }: { onDone: () => void }) {
         <label className={styles.field}>
           {tr("Ends")}
           <input className={styles.control} type="time" value={end} onChange={(e) => setEnd(e.target.value)} disabled={!start} />
+        </label>
+      </div>
+      <div className={styles.row}>
+        <label className={styles.field}>
+          {tr("Room")}
+          <input className={styles.control} value={place} onChange={(e) => setPlace(e.target.value)} maxLength={80} autoComplete="off" />
+        </label>
+        <label className={styles.field}>
+          {tr("Repeats until")}
+          <input className={styles.control} type="date" value={until} min={day} onChange={(e) => setUntil(e.target.value)} disabled={repeat === "none"} />
         </label>
       </div>
       <p className={styles.hint}>{tr("Leave the times empty for an all-day event.")}</p>

@@ -130,7 +130,7 @@ const CALENDAR_TTL_MS = 5 * 60 * 1000;
 const CALENDAR_MAX_BYTES = 5_000_000;
 const calendarCache = new Map<string, { at: number; text: string | null }>();
 
-type EventRow = { id: string; title: string; day: string; start_time: string | null; end_time: string | null; repeat: string };
+type EventRow = { id: string; title: string; day: string; start_time: string | null; end_time: string | null; repeat: string; place: string; until: string | null };
 type SourceRow = { id: string; label: string; url: string };
 
 async function sourceText(url: string): Promise<string | null> {
@@ -147,7 +147,7 @@ async function calendar(): Promise<ModuleResult<unknown>> {
   let dbReady = true;
   try {
     [rows, sources] = await Promise.all([
-      rest<EventRow[]>("events?select=id,title,day,start_time,end_time,repeat&order=day.asc&limit=500"),
+      rest<EventRow[]>("events?select=id,title,day,start_time,end_time,repeat,place,until&order=day.asc&limit=500"),
       rest<SourceRow[]>("calendar_sources?select=id,label,url&active=eq.true&order=created_at.asc&limit=5"),
     ]);
   } catch (error) {
@@ -162,8 +162,8 @@ async function calendar(): Promise<ModuleResult<unknown>> {
   const combined = [ownEventsToIcs(rows, p.time_zone), ...texts.filter((t): t is string => t !== null)].join("\r\n");
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: p.time_zone }).format(new Date());
   return ok({
-    events: eventsForDay(combined, Date.now(), p.time_zone).map((e) => ({ time: e.time, title: e.title })),
-    mine: rows.filter((r) => r.repeat !== "none" || r.day >= today).slice(0, 30).map((r) => ({ id: r.id, title: r.title, day: r.day, start: r.start_time?.slice(0, 5) ?? null, repeat: r.repeat })),
+    events: eventsForDay(combined, Date.now(), p.time_zone).map((e) => ({ time: e.time, title: e.title, place: e.place })),
+    mine: rows.filter((r) => (r.repeat !== "none" && (r.until === null || r.until >= today)) || (r.repeat === "none" && r.day >= today)).slice(0, 30).map((r) => ({ id: r.id, title: r.title, day: r.day, start: r.start_time?.slice(0, 5) ?? null, repeat: r.repeat, place: r.place, until: r.until })),
     sources: sources.map((s) => ({ id: s.id, label: s.label })),
     failed: texts.filter((t) => t === null).length,
     editable: dbReady,

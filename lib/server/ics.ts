@@ -1,10 +1,10 @@
 import "server-only";
 
-export type DayEvent = { time: string; title: string; sort: number };
+export type DayEvent = { time: string; title: string; place: string; sort: number };
 
 type Wall = { y: number; m: number; d: number; h: number; mi: number; s: number };
 type Rule = { freq: string; interval: number; count: number | null; until: number | null; byDay: { n: number | null; dow: number }[]; byMonthDay: number[] };
-type Raw = { title: string; start: Wall; end: Wall | null; allDay: boolean; tz: string; rule: Rule | null; exdates: number[] };
+type Raw = { title: string; place: string; start: Wall; end: Wall | null; allDay: boolean; tz: string; rule: Rule | null; exdates: number[] };
 
 const DOW = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 const MAX_EVENTS = 2000;
@@ -96,7 +96,7 @@ function build(props: Record<string, { value: string; params: string }[]>, fallb
   const end = endProp ? parseDate(endProp.value, endProp.params, fallbackTz) : null;
   const rule = props["RRULE"]?.[0] ? parseRule(props["RRULE"][0].value, fallbackTz) : null;
   const exdates = (props["EXDATE"] ?? []).flatMap((p) => p.value.split(",").map((v) => parseDate(v, p.params, fallbackTz))).filter((x): x is NonNullable<typeof x> => x !== null).map((x) => (x.allDay ? Date.UTC(x.wall.y, x.wall.m - 1, x.wall.d) : zonedToUtc(x.wall, x.tz)));
-  return { title: unescapeText(props["SUMMARY"]?.[0]?.value ?? "") || "Untitled", start: start.wall, end: end?.wall ?? null, allDay: start.allDay, tz: start.tz, rule, exdates };
+  return { title: unescapeText(props["SUMMARY"]?.[0]?.value ?? "") || "Untitled", place: unescapeText(props["LOCATION"]?.[0]?.value ?? "").slice(0, 80), start: start.wall, end: end?.wall ?? null, allDay: start.allDay, tz: start.tz, rule, exdates };
 }
 
 const dayNumber = (y: number, m: number, d: number) => Math.floor(Date.UTC(y, m - 1, d) / 86400000);
@@ -167,29 +167,30 @@ export function eventsForDay(text: string, now: number, tz: string): DayEvent[] 
       if (!countedOccurrence(raw, y, m, d)) continue;
       if (raw.allDay) {
         const coversToday = k < Math.max(1, spanDays);
-        if (coversToday && !raw.exdates.includes(Date.UTC(y, m - 1, d))) out.push({ time: "All day", title: raw.title, sort: -1 });
+        if (coversToday && !raw.exdates.includes(Date.UTC(y, m - 1, d))) out.push({ time: "All day", title: raw.title, place: raw.place, sort: -1 });
         continue;
       }
       const startUtc = zonedToUtc({ ...raw.start, y, m, d }, raw.tz);
       const duration = raw.end ? zonedToUtc(raw.end, raw.tz) - zonedToUtc(raw.start, raw.tz) : 0;
       if (raw.exdates.includes(startUtc)) continue;
       const overlaps = duration > 0 ? startUtc < dayEnd && startUtc + duration > dayStart : startUtc >= dayStart && startUtc < dayEnd;
-      if (overlaps) out.push({ time: startUtc < dayStart ? "00:00" : clock(startUtc, tz), title: raw.title, sort: Math.max(startUtc, dayStart) });
+      if (overlaps) out.push({ time: startUtc < dayStart ? "00:00" : clock(startUtc, tz), title: raw.title, place: raw.place, sort: Math.max(startUtc, dayStart) });
     }
   }
   return out.sort((a, b) => a.sort - b.sort).slice(0, 20);
 }
 
-export type OwnEvent = { title: string; day: string; start_time: string | null; end_time: string | null; repeat: string };
+export type OwnEvent = { title: string; day: string; start_time: string | null; end_time: string | null; repeat: string; place?: string; until?: string | null };
 
 function icsText(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/[\r\n]+/g, " ");
+  return value.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/[\r\n]+/g, " ");
 }
 
 export function ownEventsToIcs(rows: OwnEvent[], tz: string): string {
   const blocks = rows.map((r) => {
     const date = r.day.replace(/-/g, "");
     const lines = ["BEGIN:VEVENT", `SUMMARY:${icsText(r.title)}`];
+    if (r.place) lines.push(`LOCATION:${icsText(r.place)}`);
     if (r.start_time) {
       const stamp = (t: string) => `${date}T${t.slice(0, 2)}${t.slice(3, 5)}00`;
       lines.push(`DTSTART;TZID=${tz}:${stamp(r.start_time)}`);
@@ -198,7 +199,7 @@ export function ownEventsToIcs(rows: OwnEvent[], tz: string): string {
       const next = new Date(Date.parse(`${r.day}T00:00:00Z`) + 86400000).toISOString().slice(0, 10).replace(/-/g, "");
       lines.push(`DTSTART;VALUE=DATE:${date}`, `DTEND;VALUE=DATE:${next}`);
     }
-    if (r.repeat !== "none") lines.push(`RRULE:FREQ=${r.repeat.toUpperCase()}`);
+    if (r.repeat !== "none") lines.push(`RRULE:FREQ=${r.repeat.toUpperCase()}${r.until ? `;UNTIL=${r.until.replace(/-/g, "")}` : ""}`);
     lines.push("END:VEVENT");
     return lines.join("\r\n");
   });

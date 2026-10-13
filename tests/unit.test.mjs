@@ -67,11 +67,31 @@ test("own events become calendar entries safely", () => {
   assert.equal(own([row({ title: "x\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Fake\r\nDTSTART:20261013T100000Z" })]).split(" | ").length, 1);
 });
 
+test("classes repeat only until their end date and keep the room", () => {
+  const row = (extra) => ({ title: "T", day: "2026-09-01", start_time: "10:30:00", end_time: null, repeat: "weekly", ...extra });
+  assert.equal(own([row({ until: "2026-10-13" })]), "10:30 T");
+  assert.equal(own([row({ until: "2026-10-12" })]), "");
+  assert.equal(own([row({ until: null })]), "10:30 T");
+  const place = (value) => ics.eventsForDay(ics.ownEventsToIcs([row({ place: value })], TZ), NOW, TZ)[0].place;
+  assert.equal(place("B15"), "B15");
+  assert.equal(place("Wing B; room, 2"), "Wing B; room, 2");
+  assert.equal(place(""), "");
+});
+
+test("moving classes to the next term", () => {
+  assert.equal(calendarInput.shiftDay("2026-10-13", 26), "2027-04-13");
+  assert.equal(new Date(`${calendarInput.shiftDay("2026-10-13", 26)}T00:00:00Z`).getUTCDay(), new Date("2026-10-13T00:00:00Z").getUTCDay());
+  assert.equal(calendarInput.shiftDay("2026-12-28", 1), "2027-01-04");
+  assert.equal(calendarInput.parseShift({ weeks: 26 }), 26);
+  for (const bad of [{ weeks: 0 }, { weeks: 61 }, { weeks: 1.5 }, { weeks: "26" }, { weeks: Number.NaN }, {}, null, "x"]) assert.equal(calendarInput.parseShift(bad), null);
+});
+
 test("event input validation", () => {
   const ok = { title: " Lunch ", day: "2026-10-13", start: "13:00", end: "14:00", repeat: "weekly" };
-  assert.deepEqual(calendarInput.parseEvent(ok), { title: "Lunch", day: "2026-10-13", start_time: "13:00", end_time: "14:00", repeat: "weekly" });
-  assert.deepEqual(calendarInput.parseEvent({ title: "A", day: "2026-10-13" }), { title: "A", day: "2026-10-13", start_time: null, end_time: null, repeat: "none" });
-  for (const bad of [{ ...ok, title: " " }, { ...ok, title: "a".repeat(201) }, { ...ok, day: "2026-02-30" }, { ...ok, day: "13/10/2026" }, { ...ok, start: "25:00" }, { ...ok, end: "12:00" }, { ...ok, start: "", end: "14:00" }, { ...ok, repeat: "hourly" }, [], null, { ...ok, title: 5 }]) {
+  assert.deepEqual(calendarInput.parseEvent(ok), { title: "Lunch", day: "2026-10-13", start_time: "13:00", end_time: "14:00", repeat: "weekly", place: "", until: null });
+  assert.deepEqual(calendarInput.parseEvent({ title: "A", day: "2026-10-13" }), { title: "A", day: "2026-10-13", start_time: null, end_time: null, repeat: "none", place: "", until: null });
+  assert.deepEqual(calendarInput.parseEvent({ ...ok, place: " B15 ", until: "2027-01-31" }), { title: "Lunch", day: "2026-10-13", start_time: "13:00", end_time: "14:00", repeat: "weekly", place: "B15", until: "2027-01-31" });
+  for (const bad of [{ ...ok, title: " " }, { ...ok, title: "a".repeat(201) }, { ...ok, day: "2026-02-30" }, { ...ok, day: "13/10/2026" }, { ...ok, start: "25:00" }, { ...ok, end: "12:00" }, { ...ok, start: "", end: "14:00" }, { ...ok, repeat: "hourly" }, { ...ok, until: "2026-10-12" }, { ...ok, until: "2027-02-30" }, { ...ok, repeat: "none", until: "2027-01-31" }, { ...ok, place: "x".repeat(81) }, { ...ok, place: "B\n15" }, { ...ok, place: 5 }, [], null, { ...ok, title: 5 }]) {
     assert.equal(calendarInput.parseEvent(bad), null);
   }
 });

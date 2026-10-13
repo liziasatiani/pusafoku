@@ -1,5 +1,6 @@
 import AddForm from "@/components/hud/AddForm";
 import EventForm from "@/components/hud/EventForm";
+import TermShift from "@/components/hud/TermShift";
 import Panel from "@/components/hud/Panel";
 import styles from "@/components/hud/hud.module.css";
 import { useTr } from "@/components/hud/lang";
@@ -8,8 +9,8 @@ import more from "@/components/hud/calendar.module.css";
 import type { ModuleDef, PanelProps } from "@/modules/types";
 
 export type Data = {
-  events: { time: string; title: string }[];
-  mine?: { id: string; title: string; day: string; start: string | null; repeat: string }[];
+  events: { time: string; title: string; place?: string }[];
+  mine?: { id: string; title: string; day: string; start: string | null; repeat: string; place?: string; until?: string | null }[];
   sources?: { id: string; label: string }[];
   failed?: number;
   editable?: boolean;
@@ -45,7 +46,10 @@ function ModulePanel({ result, refresh }: PanelProps<Data>) {
           {data.events.map((e, i) => (
             <li key={`${e.time}-${e.title}-${i}`} className={styles.row}>
               <span className={styles.time + " mono"}>{tr(e.time)}</span>
-              <span>{e.title}</span>
+              <span>
+                {e.title}
+                {e.place ? <span className={styles.meta}> · {e.place}</span> : null}
+              </span>
             </li>
           ))}
         </ul>
@@ -67,7 +71,7 @@ function ModulePanel({ result, refresh }: PanelProps<Data>) {
                   <li key={m.id} className={styles.row}>
                     <span className={styles.time + " mono"}>{m.day.slice(5)}</span>
                     <span>
-                      {m.title} <span className={styles.meta}>{[m.start, REPEAT_LABEL[m.repeat] ? tr(REPEAT_LABEL[m.repeat]) : ""].filter(Boolean).join(" · ")}</span>
+                      {m.title} <span className={styles.meta}>{[m.start, m.place, REPEAT_LABEL[m.repeat] ? tr(REPEAT_LABEL[m.repeat]) : "", m.until ? tr("until {date}", { date: m.until.slice(5) }) : ""].filter(Boolean).join(" · ")}</span>
                     </span>
                     <button type="button" className={styles.remove} aria-label={tr("Delete {title}", { title: m.title })} onClick={() => void call(`/api/events/${m.id}`, "DELETE", refresh)}>
                       ✕
@@ -76,6 +80,10 @@ function ModulePanel({ result, refresh }: PanelProps<Data>) {
                 ))}
               </ul>
             )}
+          </details>
+          <details className={more.group}>
+            <summary className={more.summary}>{tr("Move classes to the next term")}</summary>
+            <TermShift onDone={refresh} />
           </details>
           <details className={more.group}>
             <summary className={more.summary}>{tr("Connect a calendar ({n}/5)", { n: sources.length })}</summary>
@@ -101,7 +109,7 @@ function ModulePanel({ result, refresh }: PanelProps<Data>) {
 }
 
 function toLines(data: Data, tr: Tr): string[] {
-  return data.events.length === 0 ? [tr("Nothing scheduled today.")] : data.events.map((e) => tr(e.time) + " " + e.title);
+  return data.events.length === 0 ? [tr("Nothing scheduled today.")] : data.events.map((e) => tr(e.time) + " " + e.title + (e.place ? ` (${e.place})` : ""));
 }
 
 const def: ModuleDef<Data> = {

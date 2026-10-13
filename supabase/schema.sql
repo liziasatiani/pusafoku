@@ -93,9 +93,12 @@ create table public.events (
   start_time time,
   end_time time,
   repeat text not null default 'none' check (repeat in ('none','daily','weekly','monthly','yearly')),
+  place text not null default '' check (char_length(place) <= 80),
+  until date,
   created_at timestamptz not null default now(),
   check (end_time is null or start_time is not null),
-  check (end_time is null or end_time > start_time)
+  check (end_time is null or end_time > start_time),
+  check (until is null or (repeat <> 'none' and until >= day))
 );
 create index events_day_idx on public.events (day);
 
