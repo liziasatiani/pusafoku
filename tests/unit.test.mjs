@@ -139,6 +139,12 @@ test("the day plan finds gaps and places tasks in them", () => {
   assert.equal(plan.durationText(125), "2h 5m");
 });
 
+test("a refused google sign-in names only a known reason", () => {
+  assert.equal(gmail.refusalReason({ error: "invalid_grant", error_description: "Token has been expired or revoked." }), "invalid_grant");
+  assert.equal(gmail.refusalReason({ error: "invalid_client" }), "invalid_client");
+  for (const odd of [{ error: "<script>" }, { error: 5 }, {}, null, "x", []]) assert.equal(gmail.refusalReason(odd), "unknown");
+});
+
 test("pinned places are validated and rounded", () => {
   assert.deepEqual(placesInput.parsePlace({ name: " Batumi, Georgia ", latitude: 41.64590001, longitude: 41.6418 }), { name: "Batumi, Georgia", latitude: 41.6459, longitude: 41.6418 });
   for (const bad of [{ name: "", latitude: 1, longitude: 1 }, { name: "a".repeat(61), latitude: 1, longitude: 1 }, { name: "A\nB", latitude: 1, longitude: 1 }, { name: "A", latitude: 91, longitude: 1 }, { name: "A", latitude: 1, longitude: -181 }, { name: "A", latitude: "1", longitude: 1 }, { name: "A", latitude: Number.NaN, longitude: 1 }, { name: 5, latitude: 1, longitude: 1 }, [], null]) {

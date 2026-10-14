@@ -11,6 +11,12 @@ const API = "https://gmail.googleapis.com/gmail/v1/users/me";
 const SHOWN = 8;
 const KEEP_MS = 60_000;
 const ID = /^[A-Za-z0-9_-]{6,64}$/;
+const REASONS = ["invalid_grant", "invalid_client", "unauthorized_client", "invalid_request", "invalid_scope", "access_denied"];
+
+export function refusalReason(body: unknown): string {
+  const code = typeof body === "object" && body !== null ? (body as { error?: unknown }).error : undefined;
+  return typeof code === "string" && REASONS.includes(code) ? code : "unknown";
+}
 
 let token: { value: string; until: number } | null = null;
 let box: { at: number; value: Mailbox } | null = null;
@@ -54,7 +60,7 @@ async function accessToken(): Promise<string> {
     cache: "no-store",
     signal: AbortSignal.timeout(8000),
   });
-  if (!res.ok) throw new GoogleDenied("sign-in refused");
+  if (!res.ok) throw new GoogleDenied(refusalReason(await res.json().catch(() => null)));
   const json = (await res.json()) as { access_token?: unknown; expires_in?: unknown };
   if (typeof json.access_token !== "string") throw new GoogleDenied("sign-in refused");
   const seconds = typeof json.expires_in === "number" ? json.expires_in : 3000;

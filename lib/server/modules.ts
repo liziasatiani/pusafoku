@@ -182,7 +182,7 @@ async function messages(): Promise<ModuleResult<unknown>> {
   try {
     box = await readMailbox();
   } catch (error) {
-    return { status: "error", message: error instanceof GoogleDenied ? "Google refused the sign-in" : "Could not read Gmail" };
+    return { status: "error", message: error instanceof GoogleDenied ? `Google refused the sign-in (${error.message})` : "Could not read Gmail" };
   }
   const p = await place();
   const day = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: p.time_zone }).format(new Date(iso));
