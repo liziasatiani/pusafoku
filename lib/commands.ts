@@ -15,6 +15,7 @@ const ROUTES: { id: string; words: RegExp }[] = [
   { id: "messages", words: /message|e-?mail|gmail|შეტყობინებ|მესიჯ|ელფოსტ/ },
   { id: "inbox", words: /authori[sz]|approv|waiting|ავტორიზაც|დასტურ|მომლოდინე/ },
   { id: "today", words: /plan|free time|free|what.s next|next up|დაგეგმ|თავისუფალ|შემდეგი/ },
+  { id: "agents", words: /agent|crew|(^|\s)team($|\s)|street|აგენტ|გუნდ/ },
   { id: "map", words: /map|pins?\b|places?\b|რუკა|ადგილ/ },
   { id: "clock", words: /time|date|clock|today|დრო|საათ|თარიღ/ },
 ];
@@ -57,7 +58,7 @@ export function answer(input: string, modules: AnyModule[], results: Results, la
     }
     return out;
   }
-  if (HELP.test(text)) return [tr("COMMANDS: START MY DAY / AUTHORIZATIONS / MESSAGES / NETWORK / SKY / SCHEDULE / OPERATIONS / SIGNALS / ARCHIVE / MAP / PLAN"), tr("ANYTHING ELSE: NO DATA ON FILE.")];
+  if (HELP.test(text)) return [tr("COMMANDS: START MY DAY / AUTHORIZATIONS / MESSAGES / NETWORK / SKY / SCHEDULE / OPERATIONS / SIGNALS / ARCHIVE / MAP / PLAN / AGENTS"), tr("ANYTHING ELSE: NO DATA ON FILE.")];
   for (const route of ROUTES) {
     const mod = byId.get(route.id);
     if (mod && route.words.test(text)) return linesFor(mod);

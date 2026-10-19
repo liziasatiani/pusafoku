@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { DbUnavailable, rest } from "@/lib/server/db";
 import { calendarUrl, googleConfig } from "@/lib/env";
 import { ago, readFeed, type Headline } from "@/lib/server/feeds";
+import { arrange, counts, type AgentInfo } from "@/lib/agents";
 import { GoogleDenied, readMailbox } from "@/lib/server/gmail";
 import { eventsForDay, ownEventsToIcs } from "@/lib/server/ics";
 import { fetchPublicText } from "@/lib/server/safe-fetch";
@@ -227,8 +228,33 @@ async function today(): Promise<ModuleResult<unknown>> {
   });
 }
 
-const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss, inbox, calendar, messages, map, today };
-const NEEDS_DB = new Set(["tasks", "notes", "monitor", "rss", "inbox"]);
+type AgentRow = { slug: string; name: string; project: string; role: string; parent_slug: string | null; status: AgentInfo["status"]; task: string };
+type AgentMessageRow = { from_slug: string; to_slug: string; kind: string; body: string; created_at: string };
+
+async function agents(): Promise<ModuleResult<unknown>> {
+  let rows: AgentRow[];
+  let messages: AgentMessageRow[];
+  try {
+    [rows, messages] = await Promise.all([
+      rest<AgentRow[]>("agents?select=slug,name,project,role,parent_slug,status,task&order=created_at.asc&limit=100"),
+      rest<AgentMessageRow[]>("agent_messages?select=from_slug,to_slug,kind,body,created_at&order=created_at.desc&limit=6"),
+    ]);
+  } catch (error) {
+    if (error instanceof DbUnavailable) throw error;
+    return notConnected("The agent tables are not set up yet.");
+  }
+  const list: AgentInfo[] = rows.map((r) => ({ slug: r.slug, name: r.name, project: r.project, role: r.role, parent: r.parent_slug, status: r.status, task: r.task }));
+  const now = Date.now();
+  const names = new Map(list.map((a) => [a.slug, a.name]));
+  return ok({
+    tree: arrange(list).map((n) => ({ ...n.agent, depth: n.depth })),
+    counts: counts(list),
+    messages: messages.map((m) => ({ from: names.get(m.from_slug) ?? m.from_slug, to: names.get(m.to_slug) ?? m.to_slug, kind: m.kind, body: m.body, ago: ago(Date.parse(m.created_at), now) })),
+  });
+}
+
+const FETCHERS: Record<string, () => Promise<ModuleResult<unknown>>> = { weather, tasks, notes, monitor, rss, inbox, calendar, messages, map, today, agents };
+const NEEDS_DB = new Set(["tasks", "notes", "monitor", "rss", "inbox", "agents"]);
 
 export async function loadModule(id: string): Promise<ModuleResult<unknown>> {
   const fetcher = FETCHERS[id];

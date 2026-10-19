@@ -148,3 +148,56 @@ alter table public.places force row level security;
 revoke all on all tables in schema public from anon, authenticated;
 revoke all on all sequences in schema public from anon, authenticated;
 revoke all on all functions in schema public from anon, authenticated;
+
+create table public.agents (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique check (slug ~ '^[a-z][a-z0-9-]{1,39}$'),
+  name text not null check (char_length(name) between 1 and 60),
+  project text not null default '' check (char_length(project) <= 60),
+  role text not null default '' check (char_length(role) <= 240),
+  parent_slug text references public.agents (slug) on delete set null,
+  status text not null default 'idle' check (status in ('idle','working','waiting','error')),
+  task text not null default '' check (char_length(task) <= 200),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.agent_messages (
+  id uuid primary key default gen_random_uuid(),
+  from_slug text not null references public.agents (slug) on delete cascade,
+  to_slug text not null references public.agents (slug) on delete cascade,
+  kind text not null default 'note' check (kind in ('report','task','note','approval')),
+  body text not null check (char_length(body) between 1 and 500),
+  created_at timestamptz not null default now()
+);
+create index agent_messages_created_idx on public.agent_messages (created_at desc);
+
+create table public.agent_runs (
+  id uuid primary key default gen_random_uuid(),
+  agent_slug text not null references public.agents (slug) on delete cascade,
+  kind text not null default 'manual' check (kind in ('morning','midday','evening','manual')),
+  status text not null default 'ok' check (status in ('ok','error')),
+  input_tokens integer not null default 0 check (input_tokens >= 0),
+  output_tokens integer not null default 0 check (output_tokens >= 0),
+  cost_usd numeric(10,4) not null default 0 check (cost_usd >= 0),
+  note text not null default '' check (char_length(note) <= 300),
+  started_at timestamptz not null default now(),
+  finished_at timestamptz
+);
+create index agent_runs_started_idx on public.agent_runs (started_at desc);
+
+alter table public.agents enable row level security;
+alter table public.agent_messages enable row level security;
+alter table public.agent_runs enable row level security;
+alter table public.agents force row level security;
+alter table public.agent_messages force row level security;
+alter table public.agent_runs force row level security;
+revoke all on public.agents, public.agent_messages, public.agent_runs from anon, authenticated;
+
+insert into public.agents (slug, name, project, role, parent_slug) values
+  ('curator', 'The Curator', 'Everything Street', 'Boss. Sets the day''s 3 priorities and approves or sends back the others'' work.', null),
+  ('bank', 'The Bank', 'Everything Street', 'Reports revenue, orders, average order value and best sellers. Reports only.', 'curator'),
+  ('stockroom', 'The Stockroom', 'Everything Street', 'Watches low stock, slow sellers and items people ask for.', 'curator'),
+  ('studio', 'The Studio', 'Everything Street', 'Drafts Instagram and Facebook posts and reel briefs for real products in stock.', 'curator'),
+  ('frontdesk', 'The Front Desk', 'Everything Street', 'Groups contact messages into themes and drafts replies. Flags complaints for you.', 'curator'),
+  ('postoffice', 'The Post Office', 'Everything Street', 'Drafts the weekly newsletter from new arrivals and best sellers. Never sends.', 'curator');

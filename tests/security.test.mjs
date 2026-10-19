@@ -71,7 +71,7 @@ describe("logged-out visitors", () => {
 
   const PROTECTED = [
     ["GET", "/api/modules/weather"], ["GET", "/api/modules/tasks"], ["GET", "/api/modules/notes"], ["GET", "/api/modules/monitor"],
-    ["GET", "/api/modules/rss"], ["GET", "/api/modules/inbox"], ["GET", "/api/modules/calendar"], ["GET", "/api/modules/messages"], ["GET", "/api/modules/map"], ["GET", "/api/modules/today"],
+    ["GET", "/api/modules/rss"], ["GET", "/api/modules/inbox"], ["GET", "/api/modules/calendar"], ["GET", "/api/modules/messages"], ["GET", "/api/modules/map"], ["GET", "/api/modules/today"], ["GET", "/api/modules/agents"],
     ["POST", "/api/places"], ["DELETE", `/api/places/${ID}`],
     ["POST", "/api/events/shift"], ["POST", "/api/events/skip"], ["DELETE", "/api/events/skip"],
     ["POST", "/api/tasks"], ["PATCH", `/api/tasks/${ID}`], ["DELETE", `/api/tasks/${ID}`],

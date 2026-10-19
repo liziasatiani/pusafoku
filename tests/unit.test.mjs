@@ -14,6 +14,7 @@ const topo = await import("../lib/geo/topo.ts");
 const view = await import("../lib/geo/view.ts");
 const sun = await import("../lib/geo/sun.ts");
 const plan = await import("../lib/plan.ts");
+const agentsLib = await import("../lib/agents.ts");
 const placesInput = await import("../lib/server/places-input.ts");
 const world = JSON.parse((await import("node:fs")).readFileSync(new URL("../lib/geo/countries-50m.json", import.meta.url), "utf8"));
 
@@ -143,6 +144,16 @@ test("a refused google sign-in names only a known reason", () => {
   assert.equal(gmail.refusalReason({ error: "invalid_grant", error_description: "Token has been expired or revoked." }), "invalid_grant");
   assert.equal(gmail.refusalReason({ error: "invalid_client" }), "invalid_client");
   for (const odd of [{ error: "<script>" }, { error: 5 }, {}, null, "x", []]) assert.equal(gmail.refusalReason(odd), "unknown");
+});
+
+test("agents are arranged under their parents and counted", () => {
+  const a = (slug, parent, status = "idle") => ({ slug, name: slug, project: "p", role: "", parent, status, task: "" });
+  const list = [a("bank", "boss", "working"), a("boss", null, "working"), a("sub", "bank", "waiting"), a("loner", null), a("orphan", "gone", "error")];
+  assert.deepEqual(agentsLib.arrange(list).map((n) => `${n.agent.slug}:${n.depth}`), ["boss:0", "bank:1", "sub:2", "loner:0", "orphan:0"]);
+  assert.deepEqual(agentsLib.counts(list), { agents: 3, subAgents: 2, working: 2, waiting: 1, failing: 1 });
+  const loop = [a("x", "y"), a("y", "x")];
+  assert.equal(agentsLib.arrange(loop).length, 2);
+  assert.deepEqual(agentsLib.counts([]), { agents: 0, subAgents: 0, working: 0, waiting: 0, failing: 0 });
 });
 
 test("pinned places are validated and rounded", () => {
