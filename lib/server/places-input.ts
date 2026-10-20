@@ -1,6 +1,6 @@
 import "server-only";
 
-export type PlaceInput = { name: string; latitude: number; longitude: number };
+type PlaceInput = { name: string; latitude: number; longitude: number };
 
 export const MAX_PLACES = 100;
 

@@ -1,4 +1,4 @@
-export type AgentStatus = "idle" | "working" | "waiting" | "error";
+type AgentStatus = "idle" | "working" | "waiting" | "error";
 
 export type AgentInfo = { slug: string; name: string; project: string; role: string; parent: string | null; status: AgentStatus; task: string };
 

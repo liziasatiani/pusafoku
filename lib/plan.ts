@@ -1,4 +1,4 @@
-export type PlanEvent = { time: string; end: string; title: string; place?: string };
+type PlanEvent = { time: string; end: string; title: string; place?: string };
 
 export type PlanItem =
   | { kind: "event"; start: number; end: number; title: string; place: string; past: boolean; now: boolean }
