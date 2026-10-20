@@ -3,7 +3,7 @@ import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { DbUnavailable, rest } from "@/lib/server/db";
 import { calendarUrl, googleConfig } from "@/lib/env";
 import { ago, readFeed, type Headline } from "@/lib/server/feeds";
-import { arrange, counts, type AgentInfo } from "@/lib/agents";
+import { RUNNABLE, arrange, counts, type AgentInfo } from "@/lib/agents";
 import { GoogleDenied, readMailbox } from "@/lib/server/gmail";
 import { eventsForDay, ownEventsToIcs } from "@/lib/server/ics";
 import { fetchPublicText } from "@/lib/server/safe-fetch";
@@ -247,7 +247,7 @@ async function agents(): Promise<ModuleResult<unknown>> {
   const now = Date.now();
   const names = new Map(list.map((a) => [a.slug, a.name]));
   return ok({
-    tree: arrange(list).map((n) => ({ ...n.agent, depth: n.depth })),
+    tree: arrange(list).map((n) => ({ ...n.agent, depth: n.depth, runnable: RUNNABLE.includes(n.agent.slug) })),
     counts: counts(list),
     messages: messages.map((m) => ({ from: names.get(m.from_slug) ?? m.from_slug, to: names.get(m.to_slug) ?? m.to_slug, kind: m.kind, body: m.body, ago: ago(Date.parse(m.created_at), now) })),
   });

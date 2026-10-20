@@ -72,7 +72,7 @@ describe("logged-out visitors", () => {
   const PROTECTED = [
     ["GET", "/api/modules/weather"], ["GET", "/api/modules/tasks"], ["GET", "/api/modules/notes"], ["GET", "/api/modules/monitor"],
     ["GET", "/api/modules/rss"], ["GET", "/api/modules/inbox"], ["GET", "/api/modules/calendar"], ["GET", "/api/modules/messages"], ["GET", "/api/modules/map"], ["GET", "/api/modules/today"], ["GET", "/api/modules/agents"],
-    ["POST", "/api/places"], ["DELETE", `/api/places/${ID}`],
+    ["POST", "/api/places"], ["DELETE", `/api/places/${ID}`], ["POST", "/api/agents/run"],
     ["POST", "/api/events/shift"], ["POST", "/api/events/skip"], ["DELETE", "/api/events/skip"],
     ["POST", "/api/tasks"], ["PATCH", `/api/tasks/${ID}`], ["DELETE", `/api/tasks/${ID}`],
     ["POST", "/api/notes"], ["DELETE", `/api/notes/${ID}`],
@@ -108,6 +108,8 @@ describe("open doors guard themselves", () => {
   test("the cron route needs its secret", async () => {
     assert.equal((await call("GET", "/api/cron/monitor")).status, 401);
     assert.equal((await call("GET", "/api/cron/monitor", { headers: { authorization: "Bearer wrong" } })).status, 401);
+    assert.equal((await call("GET", "/api/cron/agents")).status, 401);
+    assert.equal((await call("GET", "/api/cron/agents", { headers: { authorization: "Bearer wrong" } })).status, 401);
   });
   test("too many wrong passwords lock the door", async () => {
     const headers = { "x-forwarded-for": "203.0.113.77" };
@@ -129,7 +131,7 @@ describe("logged-in visitors", () => {
     const forms = [
       ["POST", "/api/tasks", { title: "x" }], ["POST", "/api/notes", { text: "x" }], ["POST", "/api/places", { name: "x", latitude: 1, longitude: 1 }], ["DELETE", `/api/places/${ID}`, undefined], ["POST", "/api/feeds", { url: "https://example.com/feed" }],
       ["POST", "/api/events", { title: "x", day: "2026-10-13" }], ["POST", "/api/events/shift", { weeks: 26 }], ["POST", "/api/events/skip", { from: "2026-10-27", to: "2026-11-05" }], ["DELETE", "/api/events/skip", undefined], ["POST", "/api/calendar/sources", { url: "https://example.com/a.ics" }],
-      ["POST", "/api/monitor/sites", { url: "https://example.com" }], ["POST", "/api/monitor/check", {}], ["PATCH", `/api/approvals/${ID}`, { action: "approve" }],
+      ["POST", "/api/monitor/sites", { url: "https://example.com" }], ["POST", "/api/monitor/check", {}], ["POST", "/api/agents/run", { agent: "bank" }], ["PATCH", `/api/approvals/${ID}`, { action: "approve" }],
       ["DELETE", `/api/tasks/${ID}`, undefined], ["PATCH", "/api/settings", { name: "x" }],
     ];
     for (const [method, path, body] of forms) {
@@ -146,6 +148,8 @@ describe("logged-in visitors", () => {
     assert.equal((await call("PATCH", `/api/approvals/${ID}`, { authed: true, headers: same, body: { action: "delete" } })).status, 400);
     assert.equal((await call("POST", "/api/events", { authed: true, headers: same, body: { title: "x", day: "2026-02-30" } })).status, 400);
     assert.equal((await call("PATCH", "/api/settings", { authed: true, headers: same, body: { name: "x", language: "fr" } })).status, 400);
+    assert.equal((await call("POST", "/api/agents/run", { authed: true, headers: same, body: { agent: "curator" } })).status, 400);
+    assert.equal((await call("POST", "/api/agents/run", { authed: true, headers: same, body: { agent: "../x" } })).status, 400);
     assert.equal((await call("GET", "/api/settings/search?q=a", { authed: true })).status, 400);
     for (const url of ["http://example.com", "https://localhost", "https://127.0.0.1", "https://169.254.169.254/x", "https://10.0.0.1/a", "https://intranet/a", "https://u:p@example.com/a", "https://example.com:8443/a"]) {
       assert.equal((await call("POST", "/api/feeds", { authed: true, headers: same, body: { url } })).status, 400, url);

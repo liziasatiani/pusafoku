@@ -35,3 +35,20 @@ export function googleConfig(): { clientId: string; clientSecret: string; refres
   if (!clientId || !clientSecret || !refreshToken) return undefined;
   return { clientId, clientSecret, refreshToken };
 }
+
+export function streetConfig(): { url: string; token: string } | undefined {
+  const raw = process.env.STREET_URL?.trim();
+  const token = process.env.STREET_TOKEN?.trim();
+  if (!raw || !token || token.length < 24) return undefined;
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" ? { url: url.origin, token } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function revenueGoal(): number | undefined {
+  const value = Number(process.env.STREET_REVENUE_GOAL);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}

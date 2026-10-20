@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Panel from "@/components/hud/Panel";
 import styles from "@/components/hud/hud.module.css";
 import more from "@/components/hud/agents.module.css";
@@ -7,15 +8,32 @@ import type { Tr } from "@/lib/i18n";
 import type { ModuleDef, PanelProps } from "@/modules/types";
 
 export type Data = {
-  tree: (AgentInfo & { depth: number })[];
+  tree: (AgentInfo & { depth: number; runnable: boolean })[];
   counts: AgentCounts;
   messages: { from: string; to: string; kind: string; body: string; ago: string }[];
 };
 
 const STATUS_LABEL: Record<AgentInfo["status"], string> = { idle: "idle", working: "working", waiting: "waiting for you", error: "needs a look" };
 
-function ModulePanel({ result }: PanelProps<Data>) {
+function ModulePanel({ result, refresh }: PanelProps<Data>) {
   const tr = useTr();
+  const [busy, setBusy] = useState("");
+  const [failed, setFailed] = useState(false);
+
+  async function run(slug: string) {
+    setBusy(slug);
+    setFailed(false);
+    try {
+      const res = await fetch("/api/agents/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ agent: slug }) });
+      setFailed(!res.ok);
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy("");
+      refresh?.();
+    }
+  }
+
   if (result.status !== "ok") {
     return <Panel title="Agents" status={result.status} hint={result.status === "not_connected" ? result.hint : undefined} message={result.status === "error" ? result.message : undefined} />;
   }
@@ -35,11 +53,21 @@ function ModulePanel({ result }: PanelProps<Data>) {
                 <span className={`${more.dot} ${more[a.status]}`} role="img" aria-label={tr(STATUS_LABEL[a.status])} />
                 <span className={more.what}>
                   <span className={more.name}>{a.name}</span> <span className={styles.meta}>{a.project}</span>
-                  <span className={more.task}>{a.task || tr(STATUS_LABEL[a.status])}</span>
+                  <span className={more.task}>{a.task ? tr(a.task) : tr(STATUS_LABEL[a.status])}</span>
                 </span>
+                {a.runnable && refresh ? (
+                  <button type="button" className={more.run} disabled={busy !== ""} aria-label={tr("Run {name} now", { name: a.name })} onClick={() => void run(a.slug)}>
+                    {busy === a.slug ? "…" : tr("RUN")}
+                  </button>
+                ) : null}
               </li>
             ))}
           </ul>
+          {failed ? (
+            <p className={more.failed} role="alert">
+              {tr("That run failed. See the agent's task for the reason.")}
+            </p>
+          ) : null}
           {messages.length > 0 ? (
             <>
               <h3 className={more.heading}>{tr("Latest messages")}</h3>
@@ -65,7 +93,7 @@ function toLines(data: Data, tr: Tr): string[] {
   const { counts, tree } = data;
   if (tree.length === 0) return [tr("No agents yet.")];
   const head = [tr(counts.agents === 1 ? "{n} agent" : "{n} agents", { n: counts.agents }) + ", " + tr(counts.subAgents === 1 ? "{n} sub-agent" : "{n} sub-agents", { n: counts.subAgents }) + ", " + tr("{n} working", { n: counts.working }) + "."];
-  return head.concat(tree.filter((a) => a.status !== "idle").slice(0, 4).map((a) => a.name + ": " + (a.task || tr(STATUS_LABEL[a.status]))));
+  return head.concat(tree.filter((a) => a.status !== "idle").slice(0, 4).map((a) => a.name + ": " + (a.task ? tr(a.task) : tr(STATUS_LABEL[a.status]))));
 }
 
 const def: ModuleDef<Data> = {

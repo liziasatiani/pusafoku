@@ -15,6 +15,9 @@ const view = await import("../lib/geo/view.ts");
 const sun = await import("../lib/geo/sun.ts");
 const plan = await import("../lib/plan.ts");
 const agentsLib = await import("../lib/agents.ts");
+const shopSummary = await import("../lib/shop-summary.ts");
+const bank = await import("../lib/bank.ts");
+const slots = await import("../lib/agent-slots.ts");
 const placesInput = await import("../lib/server/places-input.ts");
 const world = JSON.parse((await import("node:fs")).readFileSync(new URL("../lib/geo/countries-50m.json", import.meta.url), "utf8"));
 
@@ -154,6 +157,46 @@ test("agents are arranged under their parents and counted", () => {
   const loop = [a("x", "y"), a("y", "x")];
   assert.equal(agentsLib.arrange(loop).length, 2);
   assert.deepEqual(agentsLib.counts([]), { agents: 0, subAgents: 0, working: 0, waiting: 0, failing: 0 });
+});
+
+const period = (revenue, orders) => ({ revenue, orders, averageOrder: orders ? revenue / orders : null });
+const SUMMARY = { generatedAt: "2026-10-20T08:00:00Z", timeZone: "Asia/Tbilisi", currency: "GEL", periods: { today: period(0, 0), week: period(300, 3), month: period(1250, 10) }, bestSellers: [{ name: "Linen\nshirt", units: 4, revenue: 400 }] };
+
+test("the shop summary is accepted only when every number is sane", () => {
+  const ok = shopSummary.parseSummary(SUMMARY);
+  assert.equal(ok.bestSellers[0].name, "Linen shirt");
+  assert.equal(shopSummary.parseSummary({ ...SUMMARY, currency: "USD" }), null);
+  assert.equal(shopSummary.parseSummary({ ...SUMMARY, timeZone: "Mars/Base" }), null);
+  assert.equal(shopSummary.parseSummary({ ...SUMMARY, periods: { ...SUMMARY.periods, today: period(-1, 0) } }), null);
+  assert.equal(shopSummary.parseSummary({ ...SUMMARY, periods: { ...SUMMARY.periods, week: { revenue: 1, orders: 1.5, averageOrder: 1 } } }), null);
+  assert.equal(shopSummary.parseSummary({ ...SUMMARY, bestSellers: [{ name: "", units: 1, revenue: 1 }] }), null);
+  for (const odd of [null, "x", 5, [], {}]) assert.equal(shopSummary.parseSummary(odd), null);
+});
+
+test("the bank report states real numbers and dashes for missing ones", () => {
+  const at = Date.parse("2026-10-20T08:00:00Z");
+  const report = bank.bankReport(shopSummary.parseSummary(SUMMARY), 5000, at);
+  assert.equal(report.task, "Report ready");
+  assert.match(report.body, /Today ₾ 0\.00 from 0 orders\./);
+  assert.match(report.body, /Month ₾ 1,250\.00 from 10 orders\./);
+  assert.match(report.body, /Goal: 25% of ₾ 5,000\.00, day 20 of 31\./);
+  assert.match(report.body, /Best sellers: Linen shirt ×4\./);
+  const empty = bank.bankReport(shopSummary.parseSummary({ ...SUMMARY, periods: { today: period(0, 0), week: period(0, 0), month: period(0, 0) }, bestSellers: [] }), undefined, at);
+  assert.match(empty.body, /Average order —\./);
+  assert.match(empty.body, /Goal: not set\./);
+  assert.match(empty.body, /Best sellers: —\./);
+});
+
+test("agent slots open at their hour in the local zone and run once", () => {
+  const zone = "Asia/Tbilisi";
+  const at = (iso) => Date.parse(iso);
+  assert.equal(slots.dueSlot(at("2026-10-20T02:00:00Z"), zone, []), null);
+  assert.equal(slots.dueSlot(at("2026-10-20T04:00:00Z"), zone, []), "morning");
+  assert.equal(slots.dueSlot(at("2026-10-20T04:00:00Z"), zone, ["morning"]), null);
+  assert.equal(slots.dueSlot(at("2026-10-20T10:00:00Z"), zone, ["morning"]), "midday");
+  assert.equal(slots.dueSlot(at("2026-10-20T17:00:00Z"), zone, ["morning", "midday"]), "evening");
+  assert.equal(slots.startOfLocalDay(at("2026-10-20T20:30:00Z"), zone), at("2026-10-20T20:00:00Z"));
+  assert.equal(slots.startOfLocalDay(at("2026-10-20T10:00:00Z"), zone), at("2026-10-19T20:00:00Z"));
 });
 
 test("pinned places are validated and rounded", () => {

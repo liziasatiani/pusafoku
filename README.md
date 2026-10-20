@@ -26,6 +26,9 @@ Set these in Vercel under Settings, Environment Variables (Production, mark secr
 | `GOOGLE_CLIENT_SECRET` | for Messages | Client secret of the same app. Server only. |
 | `GOOGLE_REFRESH_TOKEN` | for Messages | Long-lived token for read-only Gmail access (metadata only). Server only. |
 | `CRON_SECRET` | for the timer | 24 or more characters. The scheduled website check sends it. |
+| `STREET_URL` | for the Bank | Address of the shop, with `https://www.` if the shop redirects. The Bank reads one summary route there. |
+| `STREET_TOKEN` | for the Bank | 24 or more characters, the same value as in the shop. Sent as a bearer token. |
+| `STREET_REVENUE_GOAL` | optional | Monthly revenue goal in ₾, a plain number. |
 | `CALENDAR_ICS_URL` | optional | One extra calendar address. Calendars can also be connected inside the Schedule panel. |
 
 A random value: `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"`
@@ -36,7 +39,8 @@ A random value: `node -e "console.log(require('crypto').randomBytes(24).toString
 2. Create the Vercel project from this repository and add the variables above.
 3. For the 30 minute website check, use a free outside timer such as cron-job.org, because GitHub's own scheduler skips runs on small repositories. Create a job that calls `https://YOUR-SITE/api/cron/monitor` every 30 minutes with the request method GET and one header: the name `Authorization` and the value `Bearer ` followed by your `CRON_SECRET`. Test run should answer 200.
 4. For Messages, create a Google OAuth app at console.cloud.google.com: new project, enable the Gmail API, set up the consent screen with yourself as the test user, then publish it (Audience, Publish app) so the token does not expire after 7 days. Create an OAuth client of type Web application with `https://developers.google.com/oauthplayground` as an authorized redirect address. In the OAuth Playground (gear icon), tick Use your own OAuth credentials, paste the client ID and secret, authorize only the scope `https://www.googleapis.com/auth/gmail.metadata`, exchange the code and copy the refresh token. Add the three `GOOGLE_` variables in Vercel and redeploy. The scope shows senders, subjects and dates only; it cannot read message bodies, send, delete or change anything.
-5. Your name, language, city, time zone and currency are set with the SETTINGS button on the page. They are stored in the single row of the `settings` table.
+5. For the agents, add a second timer job the same way as step 3, calling `https://YOUR-SITE/api/cron/agents` every 30 minutes with the same `Authorization` header. It runs the morning (08:00), midday (13:00) and evening (20:00) round once each per day in your time zone. Each agent can also be run by hand with its RUN button.
+6. Your name, language, city, time zone and currency are set with the SETTINGS button on the page. They are stored in the single row of the `settings` table.
 
 ## Commands
 

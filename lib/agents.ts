@@ -1,4 +1,4 @@
-type AgentStatus = "idle" | "working" | "waiting" | "error";
+export type AgentStatus = "idle" | "working" | "waiting" | "error";
 
 export type AgentInfo = { slug: string; name: string; project: string; role: string; parent: string | null; status: AgentStatus; task: string };
 
@@ -35,3 +35,5 @@ export function counts(list: AgentInfo[]): AgentCounts {
     failing: list.filter((a) => a.status === "error").length,
   };
 }
+
+export const RUNNABLE: readonly string[] = ["bank"];

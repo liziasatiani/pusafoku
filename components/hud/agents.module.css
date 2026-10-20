@@ -40,6 +40,39 @@
   opacity: 1;
 }
 
+.run {
+  margin-left: auto;
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.run:hover:not(:disabled) {
+  border-color: var(--glow);
+  color: var(--glow);
+}
+
+.run:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.failed {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--bad);
+}
+
 .what {
   display: flex;
   flex-direction: column;
