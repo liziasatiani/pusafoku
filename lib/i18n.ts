@@ -304,6 +304,8 @@ const KA: Record<string, string> = {
   "Run {name} now": "გაუშვით: {name}",
   "That run failed. See the agent's task for the reason.": "გაშვება ვერ მოხერხდა. მიზეზი ჩანს აგენტის ამოცანაში.",
   "Report ready": "ანგარიში მზადაა",
+  "Priorities set": "პრიორიტეტები დაწესებულია",
+  "Picking the day's priorities": "ვარჩევთ დღის პრიორიტეტებს",
   "Counting the shop's revenue": "ვითვლით მაღაზიის შემოსავალს",
   "The shop link is not set up": "მაღაზიის მისამართი არ არის მითითებული",
   "The shop refused the token": "მაღაზიამ ტოკენი უარყო",

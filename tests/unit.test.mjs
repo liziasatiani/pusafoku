@@ -17,6 +17,7 @@ const plan = await import("../lib/plan.ts");
 const agentsLib = await import("../lib/agents.ts");
 const shopSummary = await import("../lib/shop-summary.ts");
 const bank = await import("../lib/bank.ts");
+const curator = await import("../lib/curator.ts");
 const slots = await import("../lib/agent-slots.ts");
 const mailSync = await import("../lib/server/mail-sync.ts");
 const placesInput = await import("../lib/server/places-input.ts");
@@ -209,6 +210,19 @@ test("pushed mail is cleaned and anything odd is refused", () => {
   for (const bad of [null, "x", {}, { unread: -1, items: [] }, { unread: 1.5, items: [] }, { unread: 1, items: "no" }, { unread: 1, items: Array(9).fill(item) }, { unread: 1, items: [{ ...item, id: "../x" }] }, { unread: 1, items: [{ ...item, from: 5 }] }, { unread: 1, items: [{ ...item, at: "now" }] }]) {
     assert.equal(mailSync.parseMail(bad, now), null);
   }
+});
+
+test("the curator picks at most three priorities from real numbers", () => {
+  const at = Date.parse("2026-10-20T08:00:00Z");
+  const base = { summary: shopSummary.parseSummary(SUMMARY), goal: 30000, at, pending: 2, tasks: ["Call the supplier", "Reply to Ana"] };
+  assert.deepEqual(curator.priorities(base), ["Decide 2 waiting items in Authorizations.", "Behind the monthly goal: ₾ 1,250.00 of ₾ 30,000.00, day 20 of 31.", "Finish: Call the supplier"]);
+  assert.deepEqual(curator.priorities({ ...base, goal: undefined, pending: 1, tasks: [] }), ["Decide 1 waiting item in Authorizations.", "No orders yet today. Promote Linen shirt again."]);
+  assert.deepEqual(curator.priorities({ ...base, summary: null, goal: undefined, pending: 0, tasks: [] }), ["The shop numbers could not be read today."]);
+  const quiet = shopSummary.parseSummary({ ...SUMMARY, periods: { today: period(0, 0), week: period(0, 0), month: period(0, 0) }, bestSellers: [] });
+  assert.deepEqual(curator.priorities({ summary: quiet, goal: undefined, at, pending: 0, tasks: [] }), ["No paid orders this month yet. Pick one product and promote it today."]);
+  assert.deepEqual(curator.priorities({ summary: null, goal: undefined, at, pending: 0, tasks: [] }).length, 1);
+  assert.match(curator.curatorReport(base).body, /^Today's priorities\. 1\. Decide 2 waiting items/);
+  assert.equal(curator.priorities({ ...base, pending: 0, goal: undefined, tasks: ["x".repeat(200)] })[0].length, 88);
 });
 
 test("pinned places are validated and rounded", () => {

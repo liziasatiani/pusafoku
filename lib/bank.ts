@@ -8,7 +8,7 @@ const orders = (count: number) => `${count} ${count === 1 ? "order" : "orders"}`
 
 const part = (label: string, period: Period) => `${label} ${money(period.revenue)} from ${orders(period.orders)}.`;
 
-function dayOfMonth(at: number, zone: string): { day: number; days: number } {
+export function dayOfMonth(at: number, zone: string): { day: number; days: number } {
   const parts = new Intl.DateTimeFormat("en-US", { timeZone: zone, year: "numeric", month: "numeric", day: "numeric" }).formatToParts(new Date(at));
   const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
   return { day: get("day"), days: new Date(Date.UTC(get("year"), get("month"), 0)).getUTCDate() };

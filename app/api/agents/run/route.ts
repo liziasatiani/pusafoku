@@ -1,6 +1,7 @@
 import { apiGuard } from "@/lib/auth";
 import { RUNNABLE } from "@/lib/agents";
 import { runBank } from "@/lib/server/bank";
+import { runCurator } from "@/lib/server/curator";
 import { DbUnavailable } from "@/lib/server/db";
 import { allow } from "@/lib/server/limit";
 
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
   }
   if (typeof agent !== "string" || !RUNNABLE.includes(agent)) return Response.json({ error: "Unknown agent" }, { status: 400 });
   try {
-    const result = await runBank("manual");
+    const result = agent === "curator" ? await runCurator("manual") : await runBank("manual");
     return Response.json(result, { status: result.ok ? 200 : 502 });
   } catch (error) {
     return Response.json({ error: error instanceof DbUnavailable ? "Database is not connected" : "The agents are not set up" }, { status: 503 });

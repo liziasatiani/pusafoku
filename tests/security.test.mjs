@@ -153,7 +153,7 @@ describe("logged-in visitors", () => {
     assert.equal((await call("PATCH", `/api/approvals/${ID}`, { authed: true, headers: same, body: { action: "delete" } })).status, 400);
     assert.equal((await call("POST", "/api/events", { authed: true, headers: same, body: { title: "x", day: "2026-02-30" } })).status, 400);
     assert.equal((await call("PATCH", "/api/settings", { authed: true, headers: same, body: { name: "x", language: "fr" } })).status, 400);
-    assert.equal((await call("POST", "/api/agents/run", { authed: true, headers: same, body: { agent: "curator" } })).status, 400);
+    assert.equal((await call("POST", "/api/agents/run", { authed: true, headers: same, body: { agent: "stockroom" } })).status, 400);
     assert.equal((await call("POST", "/api/agents/run", { authed: true, headers: same, body: { agent: "../x" } })).status, 400);
     assert.equal((await call("GET", "/api/settings/search?q=a", { authed: true })).status, 400);
     for (const url of ["http://example.com", "https://localhost", "https://127.0.0.1", "https://169.254.169.254/x", "https://10.0.0.1/a", "https://intranet/a", "https://u:p@example.com/a", "https://example.com:8443/a"]) {

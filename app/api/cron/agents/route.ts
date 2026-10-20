@@ -1,8 +1,9 @@
-import { DEFAULT_ZONE, dueSlot, startOfLocalDay } from "@/lib/agent-slots";
+import { DEFAULT_ZONE, dueSlot, localHour, SLOTS, startOfLocalDay } from "@/lib/agent-slots";
 import { cronSecret } from "@/lib/env";
 import { runKindsSince } from "@/lib/server/agents-db";
 import { runBank } from "@/lib/server/bank";
 import { bearerMatches } from "@/lib/server/bearer";
+import { runCurator } from "@/lib/server/curator";
 import { DbUnavailable, rest } from "@/lib/server/db";
 
 async function zone(): Promise<string> {
@@ -21,11 +22,13 @@ export async function GET(request: Request) {
   try {
     const at = Date.now();
     const where = await zone();
-    const done = await runKindsSince("bank", new Date(startOfLocalDay(at, where)).toISOString());
+    const since = new Date(startOfLocalDay(at, where)).toISOString();
+    const [done, curatorDone] = await Promise.all([runKindsSince("bank", since), runKindsSince("curator", since)]);
     const slot = dueSlot(at, where, done);
-    if (!slot) return Response.json({ ran: null });
-    const bank = await runBank(slot);
-    return Response.json({ ran: slot, bank: bank.ok });
+    const bank = slot ? await runBank(slot) : null;
+    const morning = SLOTS[0];
+    const curator = !curatorDone.includes(morning.kind) && localHour(at, where) >= morning.hour ? await runCurator(morning.kind) : null;
+    return Response.json({ ran: slot, bank: bank?.ok ?? null, curator: curator?.ok ?? null });
   } catch (error) {
     return Response.json({ error: error instanceof DbUnavailable ? "Database is not connected" : "The agents are not set up" }, { status: 503 });
   }

@@ -36,4 +36,4 @@ export function counts(list: AgentInfo[]): AgentCounts {
   };
 }
 
-export const RUNNABLE: readonly string[] = ["bank"];
+export const RUNNABLE: readonly string[] = ["curator", "bank"];

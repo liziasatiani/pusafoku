@@ -61,6 +61,8 @@ A zoomable world map drawn on the device from Natural Earth country outlines (pu
 ## Agents
 Every agent and sub-agent with its project, status and current task, indented under its parent. The counts at the top show how many agents, how many sub-agents, and how many are working, waiting or failing. The Bank agent can be run with its RUN button or by the timer: it reads the shop's summary (revenue, orders, average order and best sellers for today, this week and this month), reports them to the Curator and shows "—" for anything missing. It only reads; it never changes anything in the shop. Needs the database tables from `supabase/schema.sql`, plus `STREET_URL` and `STREET_TOKEN`; `STREET_REVENUE_GOAL` adds progress towards a monthly goal.
 
+The Curator is the boss agent. Each morning (08:00, or when you press its RUN button) it picks up to three priorities and posts them to the Bank's desk: waiting items in Authorizations, your oldest open tasks, whether the month is behind the revenue goal, and what the shop did today. It works from fixed rules over your own data and the shop summary, uses no paid service and costs nothing. Missing data is stated plainly, not guessed.
+
 ## Command line and voice
 Under the globe. Commands: `start my day`, `authorizations`, `network`, `sky`, `schedule`, `operations`, `signals`, `archive`, `help`. Answers come only from your own panels; anything else gets "NO DATA ON FILE". MIC listens for one phrase after a tap, only when the browser can understand speech on the device. SPEAK REPLIES reads answers with a voice installed on the device. EN and KA choose the language.
 
