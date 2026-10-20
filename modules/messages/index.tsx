@@ -44,7 +44,7 @@ const def: ModuleDef<Data> = {
   manifest: {
     id: "messages",
     name: "Messages",
-    description: "Unread email from your Google account: sender and subject only, never stored.",
+    description: "Unread email from your Google account: sender and subject only, only the newest list is kept.",
     env: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN"],
     refreshSeconds: 120,
     size: "M",

@@ -26,6 +26,7 @@ Set these in Vercel under Settings, Environment Variables (Production, mark secr
 | `GOOGLE_CLIENT_SECRET` | for Messages | Client secret of the same app. Server only. |
 | `GOOGLE_REFRESH_TOKEN` | for Messages | Long-lived token for read-only Gmail access (metadata only). Server only. |
 | `CRON_SECRET` | for the timer | 24 or more characters. The scheduled website check sends it. |
+| `MAIL_TOKEN` | for Messages by script | 24 or more characters. The Google script in `scripts/mail-sync.gs` sends it as `Authorization: Bearer <token>`. |
 | `STREET_URL` | for the Bank | Address of the shop, with `https://www.` if the shop redirects. The Bank reads one summary route there. |
 | `STREET_TOKEN` | for the Bank | 24 or more characters, the same value as in the shop. Sent as a bearer token. |
 | `STREET_REVENUE_GOAL` | optional | Monthly revenue goal in ₾, a plain number. |
@@ -40,7 +41,8 @@ A random value: `node -e "console.log(require('crypto').randomBytes(24).toString
 3. For the 30 minute website check, use a free outside timer such as cron-job.org, because GitHub's own scheduler skips runs on small repositories. Create a job that calls `https://YOUR-SITE/api/cron/monitor` every 30 minutes with the request method GET and one header: the name `Authorization` and the value `Bearer ` followed by your `CRON_SECRET`. Test run should answer 200.
 4. For Messages, create a Google OAuth app at console.cloud.google.com: new project, enable the Gmail API, set up the consent screen with yourself as the test user, then publish it (Audience, Publish app) so the token does not expire after 7 days. Create an OAuth client of type Web application with `https://developers.google.com/oauthplayground` as an authorized redirect address. In the OAuth Playground (gear icon), tick Use your own OAuth credentials, paste the client ID and secret, authorize only the scope `https://www.googleapis.com/auth/gmail.metadata`, exchange the code and copy the refresh token. Add the three `GOOGLE_` variables in Vercel and redeploy. The scope shows senders, subjects and dates only; it cannot read message bodies, send, delete or change anything.
 5. For the agents, add a second timer job the same way as step 3, calling `https://YOUR-SITE/api/cron/agents` every 30 minutes with the same `Authorization` header. It runs the morning (08:00), midday (13:00) and evening (20:00) round once each per day in your time zone. Each agent can also be run by hand with its RUN button.
-6. Your name, language, city, time zone and currency are set with the SETTINGS button on the page. They are stored in the single row of the `settings` table.
+6. For Messages without Google sign-in keys (no expiry): open script.google.com while signed in to your Gmail, create a project, paste `scripts/mail-sync.gs` as the code, open Project Settings, tick Show appsscript.json and replace it with `scripts/mail-sync.json`. Under Script properties add `URL` (`https://YOUR-SITE/api/mail`) and `TOKEN` (your `MAIL_TOKEN`). Run `push` once and accept the permission screen, which asks only to see email metadata (sender, subject, date) and to contact an outside address. Then add a trigger (clock icon): function `push`, time-driven, every 10 minutes. Messages shows the newest list; if nothing arrives for 45 minutes it says the sync has stopped.
+7. Your name, language, city, time zone and currency are set with the SETTINGS button on the page. They are stored in the single row of the `settings` table.
 
 ## Commands
 

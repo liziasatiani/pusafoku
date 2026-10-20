@@ -24,6 +24,11 @@ export function inboxToken(): string | undefined {
   return value && value.length >= 24 ? value : undefined;
 }
 
+export function mailToken(): string | undefined {
+  const value = process.env.MAIL_TOKEN;
+  return value && value.length >= 24 ? value : undefined;
+}
+
 export function calendarUrl(): string | undefined {
   return process.env.CALENDAR_ICS_URL || undefined;
 }

@@ -5,6 +5,7 @@ import { calendarUrl, googleConfig } from "@/lib/env";
 import { ago, readFeed, type Headline } from "@/lib/server/feeds";
 import { RUNNABLE, arrange, counts, type AgentInfo } from "@/lib/agents";
 import { GoogleDenied, readMailbox } from "@/lib/server/gmail";
+import { readSnapshot, STALE_MS } from "@/lib/server/mail-sync";
 import { eventsForDay, ownEventsToIcs } from "@/lib/server/ics";
 import { fetchPublicText } from "@/lib/server/safe-fetch";
 import type { ModuleResult } from "@/modules/types";
@@ -178,12 +179,20 @@ async function calendar(): Promise<ModuleResult<unknown>> {
 }
 
 async function messages(): Promise<ModuleResult<unknown>> {
-  if (!googleConfig()) return notConnected("Connect your Google account to see unread email.");
+  const snapshot = await readSnapshot();
   let box;
-  try {
-    box = await readMailbox();
-  } catch (error) {
-    return { status: "error", message: error instanceof GoogleDenied ? `Google refused the sign-in (${error.message})` : "Could not read Gmail" };
+  if (snapshot && snapshot.age <= STALE_MS) {
+    box = snapshot.box;
+  } else if (googleConfig()) {
+    try {
+      box = await readMailbox();
+    } catch (error) {
+      return { status: "error", message: error instanceof GoogleDenied ? `Google refused the sign-in (${error.message})` : "Could not read Gmail" };
+    }
+  } else if (snapshot) {
+    return { status: "error", message: "The mail sync has stopped" };
+  } else {
+    return notConnected("Connect your Google account to see unread email.");
   }
   const p = await place();
   const day = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: p.time_zone }).format(new Date(iso));

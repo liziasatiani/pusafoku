@@ -18,6 +18,7 @@ const agentsLib = await import("../lib/agents.ts");
 const shopSummary = await import("../lib/shop-summary.ts");
 const bank = await import("../lib/bank.ts");
 const slots = await import("../lib/agent-slots.ts");
+const mailSync = await import("../lib/server/mail-sync.ts");
 const placesInput = await import("../lib/server/places-input.ts");
 const world = JSON.parse((await import("node:fs")).readFileSync(new URL("../lib/geo/countries-50m.json", import.meta.url), "utf8"));
 
@@ -197,6 +198,17 @@ test("agent slots open at their hour in the local zone and run once", () => {
   assert.equal(slots.dueSlot(at("2026-10-20T17:00:00Z"), zone, ["morning", "midday"]), "evening");
   assert.equal(slots.startOfLocalDay(at("2026-10-20T20:30:00Z"), zone), at("2026-10-20T20:00:00Z"));
   assert.equal(slots.startOfLocalDay(at("2026-10-20T10:00:00Z"), zone), at("2026-10-19T20:00:00Z"));
+});
+
+test("pushed mail is cleaned and anything odd is refused", () => {
+  const now = Date.parse("2026-10-20T10:00:00Z");
+  const item = { id: "abc123def", from: '"Ana K" <ana@example.com>', subject: "Hi\nthere", at: Date.parse("2026-10-20T09:00:00Z") };
+  const ok = mailSync.parseMail({ unread: 3, items: [item] }, now);
+  assert.deepEqual(ok.items[0], { id: "abc123def", sender: "Ana K", subject: "Hi there", at: "2026-10-20T09:00:00.000Z" });
+  assert.equal(mailSync.parseMail({ unread: 1, items: [{ ...item, at: now + 9e9 }] }, now).items[0].at, "2026-10-20T10:00:00.000Z");
+  for (const bad of [null, "x", {}, { unread: -1, items: [] }, { unread: 1.5, items: [] }, { unread: 1, items: "no" }, { unread: 1, items: Array(9).fill(item) }, { unread: 1, items: [{ ...item, id: "../x" }] }, { unread: 1, items: [{ ...item, from: 5 }] }, { unread: 1, items: [{ ...item, at: "now" }] }]) {
+    assert.equal(mailSync.parseMail(bad, now), null);
+  }
 });
 
 test("pinned places are validated and rounded", () => {

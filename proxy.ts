@@ -5,6 +5,7 @@ const OPEN_PAGES = new Set(["/login"]);
 const OPEN_API = [
   { path: "/api/auth/login", methods: ["POST"] },
   { path: "/api/inbox", methods: ["POST", "GET"] },
+  { path: "/api/mail", methods: ["POST"] },
 ];
 
 function isOpenApi(pathname: string, method: string): boolean {

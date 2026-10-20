@@ -18,6 +18,7 @@ const SENTINELS = {
   GOOGLE_CLIENT_SECRET: "sentinel-google-client-secret-0123456789",
   GOOGLE_REFRESH_TOKEN: "sentinel-google-refresh-token-0123456789abcdef",
   CRON_SECRET: "sentinel-cron-secret-abcdefghijklmnop",
+  MAIL_TOKEN: "sentinel-mail-token-abcdefghijklmnopq",
   CALENDAR_ICS_URL: "https://sentinel-calendar-host.invalid/private-token/basic.ics",
 };
 const ID = "d9754cdb-3084-4e3e-b2b5-f6f5fbcd81d8";
@@ -109,6 +110,10 @@ describe("open doors guard themselves", () => {
     assert.equal((await call("GET", "/api/cron/monitor")).status, 401);
     assert.equal((await call("GET", "/api/cron/monitor", { headers: { authorization: "Bearer wrong" } })).status, 401);
     assert.equal((await call("GET", "/api/cron/agents")).status, 401);
+    assert.equal((await call("POST", "/api/mail", { body: { unread: 0, items: [] } })).status, 401);
+    assert.equal((await call("POST", "/api/mail", { body: { unread: 0, items: [] }, headers: { authorization: "Bearer wrong" } })).status, 401);
+    assert.equal((await call("POST", "/api/mail", { body: { unread: "x" }, headers: { authorization: `Bearer ${SENTINELS.MAIL_TOKEN}` } })).status, 400);
+    assert.equal((await call("GET", "/api/mail")).status, 401);
     assert.equal((await call("GET", "/api/cron/agents", { headers: { authorization: "Bearer wrong" } })).status, 401);
   });
   test("too many wrong passwords lock the door", async () => {

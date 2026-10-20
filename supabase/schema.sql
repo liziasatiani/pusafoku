@@ -76,6 +76,13 @@ create table public.usage_log (
 );
 create index usage_log_at_idx on public.usage_log (at desc);
 
+create table public.mail_snapshot (
+  id boolean primary key default true check (id),
+  unread integer not null default 0 check (unread >= 0),
+  items jsonb not null default '[]'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
 create table public.audit_log (
   id bigint generated always as identity primary key,
   at timestamptz not null default now(),
@@ -120,6 +127,7 @@ create table public.calendar_sources (
 );
 
 alter table public.settings enable row level security;
+alter table public.mail_snapshot enable row level security;
 alter table public.tasks enable row level security;
 alter table public.notes enable row level security;
 alter table public.approvals enable row level security;
@@ -133,6 +141,7 @@ alter table public.calendar_sources enable row level security;
 alter table public.places enable row level security;
 
 alter table public.settings force row level security;
+alter table public.mail_snapshot force row level security;
 alter table public.tasks force row level security;
 alter table public.notes force row level security;
 alter table public.approvals force row level security;
